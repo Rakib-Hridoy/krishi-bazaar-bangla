@@ -14,14 +14,16 @@ import ProductDetails from "./pages/ProductDetails";
 import CreateListing from "./pages/CreateListing";
 import AdminDashboard from "./pages/AdminDashboard";
 import UserProfile from "./pages/UserProfile";
+import EditProfile from "./pages/EditProfile";
+import ReviewForm from "./pages/ReviewForm";
 import { AuthProvider } from "./contexts/AuthContext";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <BrowserRouter>
+    <BrowserRouter>
+      <TooltipProvider>
         <AuthProvider>
           <Toaster />
           <Sonner />
@@ -35,11 +37,13 @@ const App = () => (
             <Route path="/create-listing" element={<CreateListing />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/profile/:id" element={<UserProfile />} />
+            <Route path="/edit-profile" element={<EditProfile />} />
+            <Route path="/review/:id" element={<ReviewForm />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
+      </TooltipProvider>
+    </BrowserRouter>
   </QueryClientProvider>
 );
 

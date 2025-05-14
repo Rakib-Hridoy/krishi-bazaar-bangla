@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,18 +9,22 @@ import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useUserProfile } from '@/hooks/useUserProfile';
-import { getProductsByUserId } from '@/hooks/useProducts';
+import { getProductsByUserId, deleteProduct } from '@/hooks/useProducts';
 import { useReviews } from '@/hooks/useReviews';
 import { Product, User } from '@/types';
+import { useToast } from '@/components/ui/use-toast';
 
 const UserProfile = () => {
   const { id } = useParams<{ id: string }>();
   const { user: currentUser, profile: currentUserProfile } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   
   const { profile: userProfile, isLoading: loadingProfile } = useUserProfile(id);
   const { reviews, isLoading: loadingReviews } = useReviews(id);
   const [userProducts, setUserProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
+  const [showContactInfo, setShowContactInfo] = useState(false);
   
   useEffect(() => {
     const loadUserProducts = async () => {
@@ -40,6 +43,35 @@ const UserProfile = () => {
     
     loadUserProducts();
   }, [id, userProfile]);
+
+  const handleDeleteProduct = async (productId: string) => {
+    try {
+      await deleteProduct(productId);
+      setUserProducts(products => products.filter(p => p.id !== productId));
+      toast({
+        title: "পণ্য মুছে ফেলা হয়েছে",
+        description: "পণ্য সফলভাবে মুছে ফেলা হয়েছে।"
+      });
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      toast({
+        title: "পণ্য মুছতে সমস্যা",
+        description: "পণ্য মুছতে সমস্যা হয়েছে। আবার চেষ্টা করুন।",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const initiatePaymentForContact = () => {
+    // In a real implementation, this would open a payment gateway
+    toast({
+      title: "যোগাযোগের তথ্য",
+      description: "এই ফিচারটি এখনও বাস্তবায়ন করা হয়নি। শীঘ্রই আসছে।"
+    });
+    
+    // For demo purposes, just show the contact info
+    setShowContactInfo(true);
+  };
   
   if (loadingProfile) {
     return (
@@ -65,6 +97,11 @@ const UserProfile = () => {
     );
   }
 
+  const canAddReview = 
+    currentUser?.id && 
+    currentUser.id !== userProfile.id && 
+    !reviews.some(review => review.fromUserId === currentUser.id);
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -77,8 +114,18 @@ const UserProfile = () => {
               <Card className="mb-6">
                 <CardContent className="p-6">
                   <div className="flex flex-col items-center text-center">
-                    <div className="bg-agriculture-green-light rounded-full w-24 h-24 flex items-center justify-center text-white text-4xl mb-4">
-                      {userProfile.name?.charAt(0)}
+                    <div className="rounded-full w-24 h-24 flex items-center justify-center text-white text-4xl mb-4 overflow-hidden">
+                      {userProfile.avatar ? (
+                        <img 
+                          src={userProfile.avatar} 
+                          alt={userProfile.name} 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="bg-agriculture-green-light w-full h-full flex items-center justify-center">
+                          {userProfile.name?.charAt(0)}
+                        </div>
+                      )}
                     </div>
                     <h1 className="text-2xl font-bold mb-1">{userProfile.name}</h1>
                     <p className="text-muted-foreground mb-3">
@@ -94,11 +141,33 @@ const UserProfile = () => {
                       </div>
                     )}
                     
-                    {currentUser?.id !== userProfile.id && (
-                      <Button className="bg-agriculture-green-dark hover:bg-agriculture-green-light">
-                        যোগাযোগ করুন
-                      </Button>
-                    )}
+                    <div className="space-y-2">
+                      {canAddReview && (
+                        <Button 
+                          onClick={() => navigate(`/review/${userProfile.id}`)} 
+                          variant="outline"
+                          className="w-full"
+                        >
+                          রিভিউ দিন
+                        </Button>
+                      )}
+                      
+                      {currentUser?.id === userProfile.id ? (
+                        <Button 
+                          onClick={() => navigate('/edit-profile')}
+                          className="bg-agriculture-green-dark hover:bg-agriculture-green-light w-full"
+                        >
+                          প্রোফাইল এডিট করুন
+                        </Button>
+                      ) : (
+                        <Button 
+                          onClick={initiatePaymentForContact}
+                          className="bg-agriculture-green-dark hover:bg-agriculture-green-light w-full"
+                        >
+                          যোগাযোগ করুন (১০০৳)
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -107,7 +176,7 @@ const UserProfile = () => {
                 <CardContent className="p-6">
                   <h2 className="text-lg font-semibold mb-4">যোগাযোগের তথ্য</h2>
                   
-                  {currentUser?.id === userProfile.id || currentUserProfile?.role === 'admin' ? (
+                  {currentUser?.id === userProfile.id || currentUserProfile?.role === 'admin' || showContactInfo ? (
                     <div className="space-y-3">
                       <div>
                         <p className="text-sm text-muted-foreground">ইমেইল</p>
@@ -128,7 +197,7 @@ const UserProfile = () => {
                     </div>
                   ) : (
                     <p className="text-sm text-muted-foreground">
-                      যোগাযোগের তথ্য দেখার জন্য বিড করুন বা "যোগাযোগ করুন" বাটনে ক্লিক করুন।
+                      যোগাযোগের তথ্য দেখার জন্য "যোগাযোগ করুন" বাটনে ক্লিক করুন (১০০৳ পেমেন্ট প্রয়োজন)।
                     </p>
                   )}
                 </CardContent>
@@ -159,7 +228,19 @@ const UserProfile = () => {
                     ) : userProducts.length > 0 ? (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         {userProducts.map(product => (
-                          <ProductCard key={product.id} product={product} />
+                          <div key={product.id} className="relative">
+                            <ProductCard product={product} />
+                            {currentUser?.id === userProfile.id && (
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                className="absolute top-2 right-2 z-10"
+                                onClick={() => handleDeleteProduct(product.id)}
+                              >
+                                মুছুন
+                              </Button>
+                            )}
+                          </div>
                         ))}
                       </div>
                     ) : (
@@ -189,7 +270,9 @@ const UserProfile = () => {
                                 <div className="mr-2">
                                   <RatingStars rating={review.rating} />
                                 </div>
-                                <p className="font-medium">{review.fromUserName}</p>
+                                <Link to={`/profile/${review.fromUserId}`} className="font-medium hover:underline">
+                                  {review.fromUserName}
+                                </Link>
                               </div>
                               <p className="text-sm text-muted-foreground">
                                 {new Date(review.createdAt).toLocaleDateString('bn-BD')}
@@ -215,7 +298,10 @@ const UserProfile = () => {
                     <Card>
                       <CardContent className="p-6">
                         <p className="text-muted-foreground mb-4">এখানে আপনি আপনার প্রোফাইল তথ্য আপডেট করতে পারেন।</p>
-                        <Button className="bg-agriculture-green-dark hover:bg-agriculture-green-light">
+                        <Button 
+                          className="bg-agriculture-green-dark hover:bg-agriculture-green-light"
+                          onClick={() => navigate('/edit-profile')}
+                        >
                           প্রোফাইল আপডেট করুন
                         </Button>
                       </CardContent>
@@ -234,3 +320,7 @@ const UserProfile = () => {
 };
 
 export default UserProfile;
+
+// NOTE: The file is now too long and contains many advanced features. 
+// After implementing all the requested changes, we should consider refactoring this file
+// into smaller components to improve maintainability.

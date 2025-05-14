@@ -119,6 +119,71 @@ export function useProducts(categoryFilter: string = 'all', searchQuery: string 
   return { products, isLoading, error, addProduct };
 }
 
+export async function deleteProduct(productId: string): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', productId);
+
+    if (error) {
+      throw error;
+    }
+
+    return;
+  } catch (error: any) {
+    console.error('Error deleting product:', error);
+    throw error;
+  }
+}
+
+export async function getRelatedProducts(productId: string, category: string, limit: number = 4): Promise<Product[]> {
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select(`
+        id,
+        title,
+        description,
+        price,
+        quantity,
+        unit,
+        location,
+        images,
+        category,
+        created_at,
+        seller_id,
+        profiles:seller_id (name)
+      `)
+      .eq('category', category)
+      .neq('id', productId) // Exclude current product
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      throw error;
+    }
+
+    return data.map(item => ({
+      id: item.id,
+      title: item.title,
+      description: item.description || '',
+      price: Number(item.price),
+      quantity: Number(item.quantity),
+      unit: item.unit,
+      location: item.location,
+      images: item.images || [],
+      sellerId: item.seller_id,
+      sellerName: item.profiles?.name || 'অজানা বিক্রেতা',
+      createdAt: item.created_at,
+      category: item.category
+    }));
+  } catch (error) {
+    console.error('Error fetching related products:', error);
+    return [];
+  }
+}
+
 export async function getProductById(id: string): Promise<Product | null> {
   try {
     const { data, error } = await supabase

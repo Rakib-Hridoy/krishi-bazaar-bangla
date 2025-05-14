@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
@@ -25,9 +26,10 @@ import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { getProductById } from '@/hooks/useProducts';
+import { getProductById, getRelatedProducts } from '@/hooks/useProducts';
 import { useProductBids } from '@/hooks/useBids';
 import { Product } from '@/types';
+import ProductCard from '@/components/ProductCard';
 
 const ProductDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -39,6 +41,8 @@ const ProductDetails = () => {
   const [loadingProduct, setLoadingProduct] = useState(true);
   const [bidAmount, setBidAmount] = useState('');
   const [bidDialogOpen, setBidDialogOpen] = useState(false);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+  const [loadingRelated, setLoadingRelated] = useState(false);
   
   const { bids, isLoading: loadingBids, addBid, updateBidStatus } = useProductBids(id);
   
@@ -50,6 +54,13 @@ const ProductDetails = () => {
         setLoadingProduct(true);
         const productData = await getProductById(id);
         setProduct(productData);
+        
+        if (productData && productData.category) {
+          setLoadingRelated(true);
+          const related = await getRelatedProducts(id, productData.category);
+          setRelatedProducts(related);
+          setLoadingRelated(false);
+        }
       } catch (error) {
         console.error('Error fetching product:', error);
         toast({
@@ -125,6 +136,10 @@ const ProductDetails = () => {
     
     try {
       await updateBidStatus(bidId, 'accepted');
+      toast({
+        title: "বিড গৃহীত",
+        description: "বিড সফলভাবে গৃহীত হয়েছে।"
+      });
     } catch (error) {
       console.error('Error accepting bid:', error);
     }
@@ -135,6 +150,10 @@ const ProductDetails = () => {
     
     try {
       await updateBidStatus(bidId, 'rejected');
+      toast({
+        title: "বিড প্রত্যাখ্যাত",
+        description: "বিড সফলভাবে প্রত্যাখ্যাত হয়েছে।"
+      });
     } catch (error) {
       console.error('Error rejecting bid:', error);
     }
@@ -357,7 +376,26 @@ const ProductDetails = () => {
             </div>
           )}
           
-          {/* Related Products (Future Feature) */}
+          {/* Related Products */}
+          <div className="mt-12">
+            <h2 className="text-2xl font-bold mb-6">এই ধরনের আরো পণ্য</h2>
+            
+            {loadingRelated ? (
+              <p className="text-center py-4">সম্পর্কিত পণ্য লোড হচ্ছে...</p>
+            ) : relatedProducts.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {relatedProducts.map(relatedProduct => (
+                  <ProductCard key={relatedProduct.id} product={relatedProduct} />
+                ))}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <p className="text-muted-foreground">কোন সম্পর্কিত পণ্য পাওয়া যায়নি।</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
       </main>
       

@@ -1,26 +1,39 @@
 
-import { Button } from "@/components/ui/button";
+import { Link } from 'react-router-dom';
+import { cn } from "@/lib/utils";
 
 interface CategoryButtonProps {
+  id: string;
   name: string;
-  icon: string;
-  onClick: () => void;
   isActive: boolean;
 }
 
-export default function CategoryButton({ name, icon, onClick, isActive }: CategoryButtonProps) {
+const CategoryButton = ({ id, name, isActive }: CategoryButtonProps) => {
   return (
-    <Button
-      variant={isActive ? "default" : "outline"}
-      className={`flex flex-col items-center justify-center h-24 w-full ${
-        isActive 
-          ? "bg-agriculture-green-dark text-white" 
-          : "border-agriculture-green-dark text-agriculture-green-dark hover:bg-agriculture-green-light hover:text-white"
-      }`}
-      onClick={onClick}
+    <Link
+      to={`/?category=${id}`}
+      className={cn(
+        "px-4 py-2 rounded-full text-sm transition-colors",
+        isActive
+          ? "bg-agriculture-green-dark text-white hover:bg-agriculture-green-light"
+          : "border hover:bg-gray-100"
+      )}
     >
-      <span className="text-2xl mb-2">{icon}</span>
-      <span>{name}</span>
-    </Button>
+      {name}
+    </Link>
   );
-}
+};
+
+export const categories = [
+  { id: 'all', name: 'সব' },
+  { id: 'rice', name: 'ধান/চাল' },
+  { id: 'vegetables', name: 'শাকসবজি' },
+  { id: 'fruits', name: 'ফল' },
+  { id: 'fish', name: 'মাছ' },
+  { id: 'meat', name: 'মাংস' },
+  { id: 'spices', name: 'মসলা' },
+  { id: 'fertilizer', name: 'সার' },
+  { id: 'pesticide', name: 'কীটনাশক' },
+];
+
+export default CategoryButton;

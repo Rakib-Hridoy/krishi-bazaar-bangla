@@ -94,7 +94,8 @@ export function useUserProfile(userId?: string) {
         .update({
           name: profileData.name,
           phone: profileData.phone,
-          address: profileData.address
+          address: profileData.address,
+          avatar_url: profileData.avatar
         })
         .eq('id', userId)
         .select();
@@ -104,7 +105,13 @@ export function useUserProfile(userId?: string) {
       }
 
       if (data?.[0]) {
-        setProfile(prev => prev ? { ...prev, ...profileData } : null);
+        setProfile(prev => prev ? { 
+          ...prev, 
+          name: profileData.name || prev.name,
+          phone: profileData.phone || prev.phone,
+          address: profileData.address || prev.address,
+          avatar: profileData.avatar || prev.avatar
+        } : null);
         
         toast({
           title: "প্রোফাইল আপডেট করা হয়েছে",
