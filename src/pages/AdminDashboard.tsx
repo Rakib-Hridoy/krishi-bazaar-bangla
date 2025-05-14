@@ -22,18 +22,20 @@ import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { mockUsers, mockProducts } from '@/data/mockData';
+import { supabase } from '@/integrations/supabase/client';
+import { User, Product } from '@/types';
 
 const AdminDashboard = () => {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, profile, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  const [users, setUsers] = useState([...mockUsers]);
-  const [products, setProducts] = useState([...mockProducts]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [userToDelete, setUserToDelete] = useState<string | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<{id: string, type: 'user' | 'product'} | null>(null);
+  const [loadingData, setLoadingData] = useState(true);
   
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -46,7 +48,7 @@ const AdminDashboard = () => {
       return;
     }
     
-    if (!isLoading && isAuthenticated && user?.role !== 'admin') {
+    if (!isLoading && isAuthenticated && profile?.role !== 'admin') {
       toast({
         title: "অ্যাডমিন সংরক্ষিত",
         description: "এই পেইজ শুধুমাত্র অ্যাডমিনদের জন্য।",
@@ -54,12 +56,90 @@ const AdminDashboard = () => {
       });
       navigate('/dashboard');
     }
-  }, [user, isAuthenticated, isLoading, navigate, toast]);
+
+    const fetchData = async () => {
+      setLoadingData(true);
+      
+      try {
+        // Fetch users
+        const { data: userData, error: userError } = await supabase
+          .from('profiles')
+          .select('*');
+          
+        if (userError) throw userError;
+        
+        if (userData) {
+          const formattedUsers: User[] = userData.map(u => ({
+            id: u.id,
+            name: u.name,
+            email: u.email,
+            role: u.role,
+            phone: u.phone || undefined,
+            address: u.address || undefined
+          }));
+          
+          setUsers(formattedUsers);
+        }
+        
+        // Fetch products
+        const { data: productData, error: productError } = await supabase
+          .from('products')
+          .select(`
+            id,
+            title,
+            description,
+            price,
+            quantity,
+            unit,
+            location,
+            images,
+            category,
+            created_at,
+            seller_id,
+            profiles:seller_id (name)
+          `);
+          
+        if (productError) throw productError;
+        
+        if (productData) {
+          const formattedProducts: Product[] = productData.map(item => ({
+            id: item.id,
+            title: item.title,
+            description: item.description || '',
+            price: Number(item.price),
+            quantity: Number(item.quantity),
+            unit: item.unit,
+            location: item.location,
+            images: item.images || [],
+            sellerId: item.seller_id,
+            sellerName: item.profiles?.name || 'অজানা বিক্রেতা',
+            createdAt: item.created_at,
+            category: item.category
+          }));
+          
+          setProducts(formattedProducts);
+        }
+      } catch (error) {
+        console.error('Error fetching admin data:', error);
+        toast({
+          title: "ডাটা লোড করতে সমস্যা",
+          description: "ডাটা লোড করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।",
+          variant: "destructive",
+        });
+      } finally {
+        setLoadingData(false);
+      }
+    };
+    
+    if (isAuthenticated && profile?.role === 'admin') {
+      fetchData();
+    }
+  }, [user, profile, isAuthenticated, isLoading, navigate, toast]);
 
   const filteredUsers = users.filter(user => 
-    user.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.role.toLowerCase().includes(searchQuery.toLowerCase())
+    user.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.role?.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
   const filteredProducts = products.filter(product =>
@@ -68,27 +148,63 @@ const AdminDashboard = () => {
     product.location.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
-  const handleDeleteUser = () => {
-    if (userToDelete) {
-      setUsers(users.filter(u => u.id !== userToDelete));
+  const handleDeleteUser = async () => {
+    if (!itemToDelete || itemToDelete.type !== 'user') return;
+    
+    try {
+      // Only delete user from auth if they don't exist yet
+      await supabase.auth.admin.deleteUser(itemToDelete.id);
+      
+      setUsers(users.filter(u => u.id !== itemToDelete.id));
+      
       toast({
         title: "ইউজার ডিলিট করা হয়েছে",
         description: "ইউজার সফলভাবে ডিলিট করা হয়েছে।",
       });
+    } catch (error: any) {
+      console.error('Error deleting user:', error);
+      toast({
+        title: "ইউজার ডিলিট করতে সমস্যা",
+        description: error.message || "ইউজার ডিলিট করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।",
+        variant: "destructive",
+      });
+    } finally {
       setIsDeleteDialogOpen(false);
-      setUserToDelete(null);
+      setItemToDelete(null);
     }
   };
   
-  const handleDeleteProduct = (productId: string) => {
-    setProducts(products.filter(p => p.id !== productId));
-    toast({
-      title: "পণ্য ডিলিট করা হয়েছে",
-      description: "পণ্য সফলভাবে ডিলিট করা হয়েছে।",
-    });
+  const handleDeleteProduct = async () => {
+    if (!itemToDelete || itemToDelete.type !== 'product') return;
+    
+    try {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', itemToDelete.id);
+        
+      if (error) throw error;
+      
+      setProducts(products.filter(p => p.id !== itemToDelete.id));
+      
+      toast({
+        title: "পণ্য ডিলিট করা হয়েছে",
+        description: "পণ্য সফলভাবে ডিলিট করা হয়েছে।",
+      });
+    } catch (error: any) {
+      console.error('Error deleting product:', error);
+      toast({
+        title: "পণ্য ডিলিট করতে সমস্যা",
+        description: error.message || "পণ্য ডিলিট করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setItemToDelete(null);
+    }
   };
   
-  if (isLoading) {
+  if (isLoading || loadingData) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
@@ -131,7 +247,7 @@ const AdminDashboard = () => {
                   <CardTitle className="text-sm font-medium">সক্রিয় বিড</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">7</div>
+                  <div className="text-2xl font-bold">0</div>
                 </CardContent>
               </Card>
             </div>
@@ -203,7 +319,7 @@ const AdminDashboard = () => {
                                     variant="destructive" 
                                     size="sm"
                                     onClick={() => {
-                                      setUserToDelete(user.id);
+                                      setItemToDelete({id: user.id, type: 'user'});
                                       setIsDeleteDialogOpen(true);
                                     }}
                                     disabled={user.role === 'admin'}
@@ -279,7 +395,10 @@ const AdminDashboard = () => {
                                   <Button 
                                     variant="destructive" 
                                     size="sm"
-                                    onClick={() => handleDeleteProduct(product.id)}
+                                    onClick={() => {
+                                      setItemToDelete({id: product.id, type: 'product'});
+                                      setIsDeleteDialogOpen(true);
+                                    }}
                                   >
                                     ডিলিট
                                   </Button>
@@ -318,9 +437,11 @@ const AdminDashboard = () => {
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>ইউজার ডিলিট নিশ্চিত করুন</DialogTitle>
+            <DialogTitle>
+              {itemToDelete?.type === 'user' ? 'ইউজার ডিলিট নিশ্চিত করুন' : 'পণ্য ডিলিট নিশ্চিত করুন'}
+            </DialogTitle>
             <DialogDescription>
-              আপনি কি নিশ্চিত যে আপনি এই ইউজারকে ডিলিট করতে চান? এই অ্যাকশন বাতিল করা যাবে না।
+              আপনি কি নিশ্চিত যে আপনি এই {itemToDelete?.type === 'user' ? 'ইউজারকে' : 'পণ্যকে'} ডিলিট করতে চান? এই অ্যাকশন বাতিল করা যাবে না।
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -332,7 +453,7 @@ const AdminDashboard = () => {
             </Button>
             <Button
               variant="destructive"
-              onClick={handleDeleteUser}
+              onClick={itemToDelete?.type === 'user' ? handleDeleteUser : handleDeleteProduct}
             >
               ডিলিট করুন
             </Button>

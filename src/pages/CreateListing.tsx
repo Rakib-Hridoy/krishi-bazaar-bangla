@@ -15,11 +15,12 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
 const CreateListing = () => {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, profile, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -32,6 +33,7 @@ const CreateListing = () => {
   const [category, setCategory] = useState('');
   const [images, setImages] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadingImages, setUploadingImages] = useState(false);
   
   const placeholderImages = [
     'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9',
@@ -64,7 +66,7 @@ const CreateListing = () => {
       return;
     }
     
-    if (!isLoading && isAuthenticated && user?.role !== 'seller') {
+    if (!isLoading && isAuthenticated && profile?.role !== 'seller') {
       toast({
         title: "শুধুমাত্র বিক্রেতার জন্য",
         description: "শুধুমাত্র কৃষক/বিক্রেতারা পণ্য যোগ করতে পারেন।",
@@ -72,7 +74,7 @@ const CreateListing = () => {
       });
       navigate('/dashboard');
     }
-  }, [user, isAuthenticated, isLoading, navigate, toast]);
+  }, [user, profile, isAuthenticated, isLoading, navigate, toast]);
 
   const handleImageSelect = (imageUrl: string) => {
     if (images.includes(imageUrl)) {
@@ -81,9 +83,64 @@ const CreateListing = () => {
       setImages([...images, imageUrl]);
     }
   };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    try {
+      setUploadingImages(true);
+      const uploadedImageUrls: string[] = [];
+      
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+        const filePath = `${user!.id}/${fileName}`;
+        
+        const { data, error } = await supabase.storage
+          .from('product-images')
+          .upload(filePath, file);
+          
+        if (error) {
+          throw error;
+        }
+        
+        const { data: urlData } = supabase.storage
+          .from('product-images')
+          .getPublicUrl(filePath);
+          
+        uploadedImageUrls.push(urlData.publicUrl);
+      }
+      
+      setImages([...images, ...uploadedImageUrls]);
+      toast({
+        title: "ছবি আপলোড সফল",
+        description: `${uploadedImageUrls.length}টি ছবি সফলভাবে আপলোড করা হয়েছে।`,
+      });
+    } catch (error: any) {
+      console.error('Image upload error:', error);
+      toast({
+        title: "ছবি আপলোড ব্যর্থ",
+        description: error.message || "ছবি আপলোড করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingImages(false);
+    }
+  };
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!user?.id) {
+      toast({
+        title: "লগইন প্রয়োজন",
+        description: "পণ্য যোগ করতে আপনাকে লগইন করতে হবে।",
+        variant: "destructive",
+      });
+      return;
+    }
     
     if (!title || !description || price === '' || quantity === '' || !location || !category) {
       toast({
@@ -105,14 +162,40 @@ const CreateListing = () => {
     
     setIsSubmitting(true);
     
-    // Simulate form submission
-    setTimeout(() => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .insert({
+          title,
+          description,
+          price,
+          quantity,
+          unit,
+          location,
+          images,
+          category,
+          seller_id: user.id
+        })
+        .select();
+        
+      if (error) throw error;
+      
       toast({
         title: "পণ্য যোগ করা হয়েছে",
         description: "আপনার পণ্য সফলভাবে যোগ করা হয়েছে।",
       });
+      
       navigate('/dashboard');
-    }, 1500);
+    } catch (error: any) {
+      console.error('Error creating product:', error);
+      toast({
+        title: "পণ্য যোগ করতে সমস্যা",
+        description: error.message || "পণ্য যোগ করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   
   if (isLoading) {
@@ -253,11 +336,28 @@ const CreateListing = () => {
                       পণ্যের ছবি নির্বাচন করুন (অন্তত একটি)
                     </p>
                     
+                    <div className="mb-4">
+                      <Label htmlFor="image-upload" className="block mb-2">নিজের ছবি আপলোড করুন</Label>
+                      <Input
+                        id="image-upload"
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleImageUpload}
+                        disabled={uploadingImages}
+                      />
+                      {uploadingImages && <p className="text-sm mt-2">ছবি আপলোড হচ্ছে...</p>}
+                    </div>
+                    
+                    <p className="text-sm text-muted-foreground mb-2">
+                      অথবা নমুনা ছবি থেকে নির্বাচন করুন
+                    </p>
+                    
                     <div className="grid grid-cols-2 gap-4">
                       {placeholderImages.map((img, index) => (
                         <div 
                           key={index}
-                          className={`aspect-square border-2 rounded-md overflow-hidden cursor-pointer ${
+                          className={`relative aspect-square border-2 rounded-md overflow-hidden cursor-pointer ${
                             images.includes(img) ? 'border-agriculture-green-dark' : 'border-transparent'
                           }`}
                           onClick={() => handleImageSelect(img)}
@@ -275,6 +375,38 @@ const CreateListing = () => {
                         </div>
                       ))}
                     </div>
+                    
+                    {images.length > 0 && (
+                      <div className="mt-4">
+                        <p className="text-sm font-medium mb-2">আপলোড করা ছবি ({images.length})</p>
+                        <div className="grid grid-cols-4 gap-2">
+                          {images.map((img, index) => (
+                            img !== placeholderImages[0] && 
+                            img !== placeholderImages[1] && 
+                            img !== placeholderImages[2] && 
+                            img !== placeholderImages[3] && (
+                              <div key={index} className="relative aspect-square rounded-md overflow-hidden">
+                                <img 
+                                  src={img} 
+                                  alt={`Uploaded ${index}`} 
+                                  className="w-full h-full object-cover"
+                                />
+                                <button
+                                  type="button"
+                                  className="absolute top-1 right-1 bg-red-500 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setImages(images.filter(i => i !== img));
+                                  }}
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            )
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     
                     <p className="text-sm text-muted-foreground mt-2">
                       নির্বাচিত ছবি: {images.length}

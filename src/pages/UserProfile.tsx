@@ -9,29 +9,49 @@ import ProductCard from '@/components/ProductCard';
 import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { mockUsers, mockProducts, mockReviews } from '@/data/mockData';
-import { User } from '@/types';
+import { useUserProfile } from '@/hooks/useUserProfile';
+import { getProductsByUserId } from '@/hooks/useProducts';
+import { useReviews } from '@/hooks/useReviews';
+import { Product, User } from '@/types';
 
 const UserProfile = () => {
   const { id } = useParams<{ id: string }>();
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, profile: currentUserProfile } = useAuth();
   
-  const [userProfile, setUserProfile] = useState<User | null>(null);
-  const [userProducts, setUserProducts] = useState<any[]>([]);
+  const { profile: userProfile, isLoading: loadingProfile } = useUserProfile(id);
+  const { reviews, isLoading: loadingReviews } = useReviews(id);
+  const [userProducts, setUserProducts] = useState<Product[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(false);
   
   useEffect(() => {
-    // Find user by ID
-    const foundUser = mockUsers.find(u => u.id === id);
-    if (foundUser) {
-      setUserProfile(foundUser);
-      
-      // If user is a seller, get their products
-      if (foundUser.role === 'seller') {
-        const sellerProducts = mockProducts.filter(p => p.sellerId === foundUser.id);
-        setUserProducts(sellerProducts);
+    const loadUserProducts = async () => {
+      if (id && userProfile?.role === 'seller') {
+        setLoadingProducts(true);
+        try {
+          const products = await getProductsByUserId(id);
+          setUserProducts(products);
+        } catch (error) {
+          console.error('Error loading user products:', error);
+        } finally {
+          setLoadingProducts(false);
+        }
       }
-    }
-  }, [id]);
+    };
+    
+    loadUserProducts();
+  }, [id, userProfile]);
+  
+  if (loadingProfile) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-xl">প্রোফাইল লোড হচ্ছে...</p>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
   
   if (!userProfile) {
     return (
@@ -58,14 +78,14 @@ const UserProfile = () => {
                 <CardContent className="p-6">
                   <div className="flex flex-col items-center text-center">
                     <div className="bg-agriculture-green-light rounded-full w-24 h-24 flex items-center justify-center text-white text-4xl mb-4">
-                      {userProfile.name.charAt(0)}
+                      {userProfile.name?.charAt(0)}
                     </div>
                     <h1 className="text-2xl font-bold mb-1">{userProfile.name}</h1>
                     <p className="text-muted-foreground mb-3">
                       {userProfile.role === 'seller' ? 'কৃষক / বিক্রেতা' : 'ক্রেতা'}
                     </p>
                     
-                    {userProfile.rating && (
+                    {userProfile.rating !== undefined && userProfile.rating > 0 && (
                       <div className="mb-4">
                         <RatingStars rating={userProfile.rating} />
                         <p className="text-sm text-muted-foreground mt-1">
@@ -87,7 +107,7 @@ const UserProfile = () => {
                 <CardContent className="p-6">
                   <h2 className="text-lg font-semibold mb-4">যোগাযোগের তথ্য</h2>
                   
-                  {currentUser?.id === userProfile.id || currentUser?.role === 'admin' ? (
+                  {currentUser?.id === userProfile.id || currentUserProfile?.role === 'admin' ? (
                     <div className="space-y-3">
                       <div>
                         <p className="text-sm text-muted-foreground">ইমেইল</p>
@@ -132,7 +152,11 @@ const UserProfile = () => {
                   <TabsContent value="products">
                     <h2 className="text-xl font-bold mb-6">{userProfile.name} এর পণ্যসমূহ</h2>
                     
-                    {userProducts.length > 0 ? (
+                    {loadingProducts ? (
+                      <div className="text-center py-8">
+                        <p className="text-muted-foreground">পণ্য লোড হচ্ছে...</p>
+                      </div>
+                    ) : userProducts.length > 0 ? (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         {userProducts.map(product => (
                           <ProductCard key={product.id} product={product} />
@@ -151,28 +175,30 @@ const UserProfile = () => {
                 <TabsContent value="reviews">
                   <h2 className="text-xl font-bold mb-6">রিভিউ</h2>
                   
-                  {mockReviews.filter(r => r.toUserId === userProfile.id).length > 0 ? (
+                  {loadingReviews ? (
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground">রিভিউ লোড হচ্ছে...</p>
+                    </div>
+                  ) : reviews.length > 0 ? (
                     <div className="space-y-4">
-                      {mockReviews
-                        .filter(r => r.toUserId === userProfile.id)
-                        .map(review => (
-                          <Card key={review.id}>
-                            <CardContent className="p-6">
-                              <div className="flex justify-between mb-2">
-                                <div className="flex items-center">
-                                  <div className="mr-2">
-                                    <RatingStars rating={review.rating} />
-                                  </div>
-                                  <p className="font-medium">{review.fromUserName}</p>
+                      {reviews.map(review => (
+                        <Card key={review.id}>
+                          <CardContent className="p-6">
+                            <div className="flex justify-between mb-2">
+                              <div className="flex items-center">
+                                <div className="mr-2">
+                                  <RatingStars rating={review.rating} />
                                 </div>
-                                <p className="text-sm text-muted-foreground">
-                                  {new Date(review.createdAt).toLocaleDateString('bn-BD')}
-                                </p>
+                                <p className="font-medium">{review.fromUserName}</p>
                               </div>
-                              <p>{review.comment}</p>
-                            </CardContent>
-                          </Card>
-                        ))}
+                              <p className="text-sm text-muted-foreground">
+                                {new Date(review.createdAt).toLocaleDateString('bn-BD')}
+                              </p>
+                            </div>
+                            <p>{review.comment}</p>
+                          </CardContent>
+                        </Card>
+                      ))}
                     </div>
                   ) : (
                     <Card>

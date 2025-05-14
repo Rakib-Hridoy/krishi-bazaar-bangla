@@ -1,17 +1,18 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import CategoryButton from '@/components/CategoryButton';
 import ProductCard from '@/components/ProductCard';
-import { mockProducts } from '@/data/mockData';
 import { Link } from 'react-router-dom';
+import { useProducts } from '@/hooks/useProducts';
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
+  const [searchInputValue, setSearchInputValue] = useState('');
 
   const categories = [
     { id: 'all', name: 'সব', icon: '🌾' },
@@ -22,17 +23,17 @@ const Index = () => {
     { id: 'মাংস', name: 'মাংস', icon: '🍗' },
   ];
 
-  // Filter products based on search and category
-  const filteredProducts = mockProducts.filter(product => {
-    const matchesSearch = !searchQuery || 
-      product.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      product.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.location.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesCategory = activeCategory === 'all' || product.category === activeCategory;
-    
-    return matchesSearch && matchesCategory;
-  });
+  const { products, isLoading } = useProducts(activeCategory, searchQuery);
+
+  const handleSearch = () => {
+    setSearchQuery(searchInputValue);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -78,10 +79,14 @@ const Index = () => {
               type="text"
               placeholder="পণ্য, অবস্থান খুঁজুন..."
               className="md:flex-1"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={searchInputValue}
+              onChange={(e) => setSearchInputValue(e.target.value)}
+              onKeyPress={handleKeyPress}
             />
-            <Button className="bg-agriculture-amber hover:bg-amber-600 text-white">
+            <Button 
+              className="bg-agriculture-amber hover:bg-amber-600 text-white"
+              onClick={handleSearch}
+            >
               খুঁজুন
             </Button>
           </div>
@@ -110,9 +115,14 @@ const Index = () => {
       <section className="py-12 px-4 bg-gray-50">
         <div className="container mx-auto">
           <h2 className="text-2xl font-bold mb-6">সাম্প্রতিক পণ্যসমূহ</h2>
-          {filteredProducts.length > 0 ? (
+          
+          {isLoading ? (
+            <div className="text-center py-12">
+              <p className="text-xl">পণ্য লোড হচ্ছে...</p>
+            </div>
+          ) : products.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {filteredProducts.map((product) => (
+              {products.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>
@@ -123,6 +133,7 @@ const Index = () => {
                 className="mt-4 bg-agriculture-green-dark hover:bg-agriculture-green-light"
                 onClick={() => {
                   setSearchQuery('');
+                  setSearchInputValue('');
                   setActiveCategory('all');
                 }}
               >

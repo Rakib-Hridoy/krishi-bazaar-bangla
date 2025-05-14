@@ -14,16 +14,20 @@ import { useToast } from '@/components/ui/use-toast';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
-import { mockProducts, mockBids } from '@/data/mockData';
-import { Product, Bid } from '@/types';
+import { getProductsByUserId } from '@/hooks/useProducts';
+import { getUserBids } from '@/hooks/useBids';
+import { getUserReviews } from '@/hooks/useReviews';
+import { Product, Bid, Review } from '@/types';
 
 const Dashboard = () => {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, profile, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [userProducts, setUserProducts] = useState<Product[]>([]);
   const [userBids, setUserBids] = useState<Bid[]>([]);
+  const [userReviews, setUserReviews] = useState<Review[]>([]);
   const [activeTab, setActiveTab] = useState("overview");
+  const [loadingData, setLoadingData] = useState(false);
   
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -33,21 +37,42 @@ const Dashboard = () => {
         variant: "destructive",
       });
       navigate('/login');
+      return;
     }
     
     // Load user specific data
-    if (user) {
-      if (user.role === 'seller') {
-        // For seller, fetch their products
-        setUserProducts(mockProducts.filter(product => product.sellerId === user.id));
-      } else if (user.role === 'buyer') {
-        // For buyer, fetch their bids
-        setUserBids(mockBids.filter(bid => bid.buyerId === user.id));
-      }
+    if (user?.id) {
+      setLoadingData(true);
+      
+      const fetchUserData = async () => {
+        try {
+          // For seller, fetch their products
+          if (profile?.role === 'seller') {
+            const products = await getProductsByUserId(user.id);
+            setUserProducts(products);
+          }
+          
+          // For buyer, fetch their bids
+          if (profile?.role === 'buyer') {
+            const bids = await getUserBids(user.id);
+            setUserBids(bids);
+          }
+          
+          // Fetch reviews
+          const reviews = await getUserReviews(user.id);
+          setUserReviews(reviews);
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+        } finally {
+          setLoadingData(false);
+        }
+      };
+      
+      fetchUserData();
     }
-  }, [user, isAuthenticated, isLoading, navigate, toast]);
+  }, [user, profile, isAuthenticated, isLoading, navigate, toast]);
 
-  if (isLoading) {
+  if (isLoading || loadingData) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
@@ -73,13 +98,13 @@ const Dashboard = () => {
               <CardContent className="p-6">
                 <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
                   <div className="bg-agriculture-green-light rounded-full w-24 h-24 flex items-center justify-center text-white text-4xl">
-                    {user?.name.charAt(0)}
+                    {profile?.name?.charAt(0) || user?.email?.charAt(0)}
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold">{user?.name}</h2>
-                    <p className="text-muted-foreground">{user?.email}</p>
+                    <h2 className="text-2xl font-bold">{profile?.name || 'ব্যবহারকারী'}</h2>
+                    <p className="text-muted-foreground">{profile?.email || user?.email}</p>
                     <p className="mt-2">
-                      {user?.role === 'seller' ? 'কৃষক / বিক্রেতা' : 'ক্রেতা'}
+                      {profile?.role === 'seller' ? 'কৃষক / বিক্রেতা' : 'ক্রেতা'}
                     </p>
                     <div className="mt-4 flex gap-3">
                       <Button variant="outline" asChild>
@@ -90,7 +115,7 @@ const Dashboard = () => {
                         onClick={() => {
                           navigate('/create-listing');
                         }}
-                        className={user?.role !== 'seller' ? 'hidden' : ''}
+                        className={profile?.role !== 'seller' ? 'hidden' : ''}
                       >
                         নতুন পণ্য যোগ করুন
                       </Button>
@@ -104,7 +129,7 @@ const Dashboard = () => {
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="grid grid-cols-3 md:w-[400px] mb-8">
                 <TabsTrigger value="overview">ওভারভিউ</TabsTrigger>
-                {user?.role === 'seller' ? (
+                {profile?.role === 'seller' ? (
                   <TabsTrigger value="products">আমার পণ্য</TabsTrigger>
                 ) : (
                   <TabsTrigger value="bids">আমার বিড</TabsTrigger>
@@ -117,28 +142,25 @@ const Dashboard = () => {
                   <Card>
                     <CardHeader className="pb-2">
                       <CardTitle className="text-sm font-medium">
-                        {user?.role === 'seller' ? 'মোট পণ্য' : 'মোট বিড'}
+                        {profile?.role === 'seller' ? 'মোট পণ্য' : 'মোট বিড'}
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="text-2xl font-bold">
-                        {user?.role === 'seller' ? userProducts.length : userBids.length}
+                        {profile?.role === 'seller' ? userProducts.length : userBids.length}
                       </div>
                     </CardContent>
                   </Card>
                   <Card>
                     <CardHeader className="pb-2">
                       <CardTitle className="text-sm font-medium">
-                        {user?.role === 'seller' ? 'একটিভ বিড' : 'গৃহীত বিড'}
+                        {profile?.role === 'seller' ? 'একটিভ বিড' : 'গৃহীত বিড'}
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="text-2xl font-bold">
-                        {user?.role === 'seller' 
-                          ? mockBids.filter(bid => 
-                              userProducts.some(p => p.id === bid.productId) && 
-                              bid.status === 'pending'
-                            ).length
+                        {profile?.role === 'seller' 
+                          ? '0' // To be calculated from real data later
                           : userBids.filter(bid => bid.status === 'accepted').length
                         }
                       </div>
@@ -149,7 +171,7 @@ const Dashboard = () => {
                       <CardTitle className="text-sm font-medium">রিভিউ</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">0</div>
+                      <div className="text-2xl font-bold">{userReviews.length}</div>
                     </CardContent>
                   </Card>
                 </div>
@@ -167,7 +189,7 @@ const Dashboard = () => {
               </TabsContent>
               
               <TabsContent value="products" className="space-y-4">
-                {user?.role === 'seller' && (
+                {profile?.role === 'seller' && (
                   <>
                     <div className="flex justify-between items-center">
                       <h3 className="text-xl font-semibold">আমার পণ্যসমূহ</h3>
@@ -203,7 +225,7 @@ const Dashboard = () => {
               </TabsContent>
               
               <TabsContent value="bids" className="space-y-4">
-                {user?.role === 'buyer' && (
+                {profile?.role === 'buyer' && (
                   <>
                     <h3 className="text-xl font-semibold">আমার বিড</h3>
                     
@@ -220,42 +242,39 @@ const Dashboard = () => {
                             </tr>
                           </thead>
                           <tbody>
-                            {userBids.map((bid) => {
-                              const product = mockProducts.find(p => p.id === bid.productId);
-                              return (
-                                <tr key={bid.id} className="border-b">
-                                  <td className="p-2">
-                                    {product?.title || 'অজানা পণ্য'}
-                                  </td>
-                                  <td className="p-2">৳{bid.amount}</td>
-                                  <td className="p-2">
-                                    {bid.status === 'pending' && 
-                                      <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded">অপেক্ষমাণ</span>
-                                    }
-                                    {bid.status === 'accepted' && 
-                                      <span className="px-2 py-1 bg-green-100 text-green-800 rounded">গৃহীত</span>
-                                    }
-                                    {bid.status === 'rejected' && 
-                                      <span className="px-2 py-1 bg-red-100 text-red-800 rounded">প্রত্যাখ্যাত</span>
-                                    }
-                                  </td>
-                                  <td className="p-2">
-                                    {new Date(bid.createdAt).toLocaleDateString('bn-BD')}
-                                  </td>
-                                  <td className="p-2">
-                                    <Button 
-                                      variant="outline" 
-                                      size="sm" 
-                                      onClick={() => {
-                                        if (product) navigate(`/product/${product.id}`);
-                                      }}
-                                    >
-                                      বিস্তারিত
-                                    </Button>
-                                  </td>
-                                </tr>
-                              );
-                            })}
+                            {userBids.map((bid) => (
+                              <tr key={bid.id} className="border-b">
+                                <td className="p-2">
+                                  {bid.productTitle || 'অজানা পণ্য'}
+                                </td>
+                                <td className="p-2">৳{bid.amount}</td>
+                                <td className="p-2">
+                                  {bid.status === 'pending' && 
+                                    <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded">অপেক্ষমাণ</span>
+                                  }
+                                  {bid.status === 'accepted' && 
+                                    <span className="px-2 py-1 bg-green-100 text-green-800 rounded">গৃহীত</span>
+                                  }
+                                  {bid.status === 'rejected' && 
+                                    <span className="px-2 py-1 bg-red-100 text-red-800 rounded">প্রত্যাখ্যাত</span>
+                                  }
+                                </td>
+                                <td className="p-2">
+                                  {new Date(bid.createdAt).toLocaleDateString('bn-BD')}
+                                </td>
+                                <td className="p-2">
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    onClick={() => {
+                                      navigate(`/product/${bid.productId}`);
+                                    }}
+                                  >
+                                    বিস্তারিত
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))}
                           </tbody>
                         </table>
                       </div>
@@ -278,11 +297,34 @@ const Dashboard = () => {
               
               <TabsContent value="reviews" className="space-y-4">
                 <h3 className="text-xl font-semibold">আমার রিভিউ</h3>
-                <Card>
-                  <CardContent className="text-center py-12">
-                    <p>আপনার কোন রিভিউ নেই।</p>
-                  </CardContent>
-                </Card>
+                {userReviews.length > 0 ? (
+                  <div className="space-y-4">
+                    {userReviews.map(review => (
+                      <Card key={review.id}>
+                        <CardContent className="p-6">
+                          <div className="flex justify-between mb-2">
+                            <div className="flex items-center">
+                              <p className="font-medium">যার জন্য রিভিউ দিয়েছেন: {review.fromUserName}</p>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {new Date(review.createdAt).toLocaleDateString('bn-BD')}
+                            </p>
+                          </div>
+                          <div className="flex items-center mb-2">
+                            <p className="mr-2">রেটিং: {review.rating}/5</p>
+                          </div>
+                          <p>{review.comment}</p>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <Card>
+                    <CardContent className="text-center py-12">
+                      <p>আপনার কোন রিভিউ নেই।</p>
+                    </CardContent>
+                  </Card>
+                )}
               </TabsContent>
             </Tabs>
           </div>
