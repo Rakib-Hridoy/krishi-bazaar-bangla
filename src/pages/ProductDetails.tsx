@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
@@ -27,7 +26,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { getProductById } from '@/hooks/useProducts';
-import { useBids } from '@/hooks/useBids';
+import { useProductBids } from '@/hooks/useBids';
 import { Product } from '@/types';
 
 const ProductDetails = () => {
@@ -41,7 +40,7 @@ const ProductDetails = () => {
   const [bidAmount, setBidAmount] = useState('');
   const [bidDialogOpen, setBidDialogOpen] = useState(false);
   
-  const { bids, isLoading: loadingBids, addBid, updateBidStatus } = useBids(id);
+  const { bids, isLoading: loadingBids, addBid, updateBidStatus } = useProductBids(id);
   
   useEffect(() => {
     const fetchProduct = async () => {
