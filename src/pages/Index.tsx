@@ -101,6 +101,7 @@ const Index = () => {
             {categories.map((category) => (
               <CategoryButton
                 key={category.id}
+                id={category.id} // Added the id prop to fix the error
                 name={category.name}
                 icon={category.icon}
                 isActive={activeCategory === category.id}
