@@ -13,6 +13,7 @@ import { useUserProfile } from '@/hooks/useUserProfile';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { supabase } from '@/integrations/supabase/client';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 const EditProfile = () => {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -57,7 +58,7 @@ const EditProfile = () => {
         
         const fileExt = selectedFile.name.split('.').pop();
         const fileName = `${user?.id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-        const filePath = `avatars/${fileName}`;
+        const filePath = `${fileName}`;
         
         const { error: uploadError } = await supabase.storage
           .from('profiles')
@@ -148,15 +149,18 @@ const EditProfile = () => {
                   <div className="flex items-center gap-4">
                     <div className="flex-shrink-0">
                       {avatarUrl ? (
-                        <img 
-                          src={avatarUrl} 
-                          alt="প্রোফাইল ছবি" 
-                          className="w-20 h-20 rounded-full object-cover"
-                        />
+                        <Avatar className="w-20 h-20">
+                          <AvatarImage src={avatarUrl} alt="প্রোফাইল ছবি" className="object-cover" />
+                          <AvatarFallback className="bg-agriculture-green-light text-white text-2xl">
+                            {name?.charAt(0) || user?.email?.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
                       ) : (
-                        <div className="w-20 h-20 rounded-full bg-agriculture-green-light flex items-center justify-center text-white text-2xl">
-                          {name?.charAt(0) || user?.email?.charAt(0)}
-                        </div>
+                        <Avatar className="w-20 h-20">
+                          <AvatarFallback className="bg-agriculture-green-light text-white text-2xl">
+                            {name?.charAt(0) || user?.email?.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
                       )}
                     </div>
                     <div className="flex-grow">

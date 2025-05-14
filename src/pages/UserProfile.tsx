@@ -11,8 +11,9 @@ import Footer from '@/components/Footer';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { getProductsByUserId, deleteProduct } from '@/hooks/useProducts';
 import { useReviews } from '@/hooks/useReviews';
-import { Product, User } from '@/types';
+import { Product } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
+import UserAvatar from '@/components/UserAvatar';
 
 const UserProfile = () => {
   const { id } = useParams<{ id: string }>();
@@ -114,18 +115,11 @@ const UserProfile = () => {
               <Card className="mb-6">
                 <CardContent className="p-6">
                   <div className="flex flex-col items-center text-center">
-                    <div className="rounded-full w-24 h-24 flex items-center justify-center text-white text-4xl mb-4 overflow-hidden">
-                      {userProfile.avatar ? (
-                        <img 
-                          src={userProfile.avatar} 
-                          alt={userProfile.name} 
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="bg-agriculture-green-light w-full h-full flex items-center justify-center">
-                          {userProfile.name?.charAt(0)}
-                        </div>
-                      )}
+                    <div className="mb-4">
+                      <UserAvatar 
+                        user={userProfile} 
+                        className="w-24 h-24"
+                      />
                     </div>
                     <h1 className="text-2xl font-bold mb-1">{userProfile.name}</h1>
                     <p className="text-muted-foreground mb-3">
@@ -237,7 +231,7 @@ const UserProfile = () => {
                                 className="absolute top-2 right-2 z-10"
                                 onClick={() => handleDeleteProduct(product.id)}
                               >
-                                মুছুন
+                                ম��ছুন
                               </Button>
                             )}
                           </div>

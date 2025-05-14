@@ -137,6 +137,7 @@ export function useProductBids(productId?: string) {
 
       toast({
         title: status === 'accepted' ? "দর প্রস্তাব গৃহীত হয়েছে" : "দর প্রস্তাব প্রত্যাখ্যান করা হয়েছে",
+        description: status === 'accepted' ? "দর প্রস্তাব সফলভাবে গৃহীত হয়েছে।" : "দর প্রস্তাব সফলভাবে প্রত্যাখ্যান করা হয়েছে।" 
       });
 
       // Update bid status in local state
