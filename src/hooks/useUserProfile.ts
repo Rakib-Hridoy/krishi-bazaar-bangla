@@ -19,6 +19,7 @@ export function useUserProfile(userId?: string) {
       try {
         setIsLoading(true);
         
+        // Fetch basic profile data
         const { data, error } = await supabase
           .from('profiles')
           .select(`
@@ -28,9 +29,7 @@ export function useUserProfile(userId?: string) {
             role, 
             phone, 
             address, 
-            avatar_url,
-            (SELECT COUNT(*) FROM reviews WHERE to_user_id = profiles.id) as review_count,
-            (SELECT AVG(rating) FROM reviews WHERE to_user_id = profiles.id) as avg_rating
+            avatar_url
           `)
           .eq('id', userId)
           .single();
@@ -38,17 +37,34 @@ export function useUserProfile(userId?: string) {
         if (error) {
           throw error;
         }
+        
+        // Fetch review data separately
+        const { data: reviewData, error: reviewError } = await supabase
+          .from('reviews')
+          .select('rating')
+          .eq('to_user_id', userId);
+          
+        if (reviewError) {
+          console.error('Error fetching reviews:', reviewError);
+        }
+        
+        // Calculate average rating and review count
+        const reviewCount = reviewData?.length || 0;
+        const avgRating = reviewData?.length 
+          ? reviewData.reduce((sum, review) => sum + (review.rating || 0), 0) / reviewData.length 
+          : 0;
 
         if (data) {
           setProfile({
             id: data.id,
             name: data.name,
             email: data.email,
-            role: data.role,
+            role: data.role as 'buyer' | 'seller' | 'admin',
             phone: data.phone || undefined,
             address: data.address || undefined,
-            rating: data.avg_rating || 0,
-            reviewCount: data.review_count || 0
+            avatar: data.avatar_url || undefined,
+            rating: avgRating,
+            reviewCount: reviewCount
           });
         }
       } catch (err: any) {

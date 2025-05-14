@@ -19,12 +19,12 @@ export function useReviews(userId?: string) {
       try {
         setIsLoading(true);
         
-        const { data, error } = await supabase
+        // Fetch reviews
+        const { data: reviewsData, error: reviewsError } = await supabase
           .from('reviews')
           .select(`
             id,
             from_user_id,
-            profiles:from_user_id (name),
             to_user_id,
             rating,
             comment,
@@ -33,14 +33,32 @@ export function useReviews(userId?: string) {
           .eq('to_user_id', userId)
           .order('created_at', { ascending: false });
 
-        if (error) {
-          throw error;
+        if (reviewsError) {
+          throw reviewsError;
         }
+        
+        // Fetch user names in a separate query
+        const userIds = reviewsData.map(review => review.from_user_id);
+        const { data: usersData, error: usersError } = await supabase
+          .from('profiles')
+          .select('id, name')
+          .in('id', userIds);
+          
+        if (usersError) {
+          throw usersError;
+        }
+        
+        // Create a map of user IDs to names
+        const userMap = new Map();
+        usersData?.forEach(user => {
+          userMap.set(user.id, user.name);
+        });
 
-        const formattedReviews: Review[] = data.map(item => ({
+        // Combine data
+        const formattedReviews: Review[] = reviewsData.map(item => ({
           id: item.id,
           fromUserId: item.from_user_id,
-          fromUserName: item.profiles?.name || 'অজানা ব্যবহারকারী',
+          fromUserName: userMap.get(item.from_user_id) || 'অজানা ব্যবহারকারী',
           toUserId: item.to_user_id,
           rating: Number(item.rating),
           comment: item.comment || '',
@@ -111,12 +129,12 @@ export function useReviews(userId?: string) {
 
 export async function getUserReviews(userId: string): Promise<Review[]> {
   try {
-    const { data, error } = await supabase
+    // Fetch reviews
+    const { data: reviewsData, error: reviewsError } = await supabase
       .from('reviews')
       .select(`
         id,
         from_user_id,
-        profiles:from_user_id (name),
         to_user_id,
         rating,
         comment,
@@ -125,14 +143,31 @@ export async function getUserReviews(userId: string): Promise<Review[]> {
       .eq('from_user_id', userId)
       .order('created_at', { ascending: false });
 
-    if (error) {
-      throw error;
+    if (reviewsError) {
+      throw reviewsError;
     }
+    
+    // Fetch user names in a separate query
+    const userIds = reviewsData.map(review => review.to_user_id);
+    const { data: usersData, error: usersError } = await supabase
+      .from('profiles')
+      .select('id, name')
+      .in('id', userIds);
+      
+    if (usersError) {
+      throw usersError;
+    }
+    
+    // Create a map of user IDs to names
+    const userMap = new Map();
+    usersData?.forEach(user => {
+      userMap.set(user.id, user.name);
+    });
 
-    return data.map(item => ({
+    return reviewsData.map(item => ({
       id: item.id,
       fromUserId: item.from_user_id,
-      fromUserName: item.profiles?.name || 'অজানা ব্যবহারকারী',
+      fromUserName: 'আপনি',
       toUserId: item.to_user_id,
       rating: Number(item.rating),
       comment: item.comment || '',

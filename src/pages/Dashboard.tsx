@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -18,6 +17,7 @@ import { getProductsByUserId } from '@/hooks/useProducts';
 import { getUserBids } from '@/hooks/useBids';
 import { getUserReviews } from '@/hooks/useReviews';
 import { Product, Bid, Review } from '@/types';
+import { Link } from 'react-router-dom';
 
 const Dashboard = () => {
   const { user, profile, isAuthenticated, isLoading } = useAuth();
@@ -230,54 +230,7 @@ const Dashboard = () => {
                     <h3 className="text-xl font-semibold">আমার বিড</h3>
                     
                     {userBids.length > 0 ? (
-                      <div className="overflow-auto">
-                        <table className="w-full border-collapse">
-                          <thead>
-                            <tr className="bg-muted">
-                              <th className="p-2 text-left">পণ্য</th>
-                              <th className="p-2 text-left">বিড অ্যামাউন্ট</th>
-                              <th className="p-2 text-left">স্ট্যাটাস</th>
-                              <th className="p-2 text-left">তারিখ</th>
-                              <th className="p-2 text-left">একশন</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {userBids.map((bid) => (
-                              <tr key={bid.id} className="border-b">
-                                <td className="p-2">
-                                  {bid.productTitle || 'অজানা পণ্য'}
-                                </td>
-                                <td className="p-2">৳{bid.amount}</td>
-                                <td className="p-2">
-                                  {bid.status === 'pending' && 
-                                    <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded">অপেক্ষমাণ</span>
-                                  }
-                                  {bid.status === 'accepted' && 
-                                    <span className="px-2 py-1 bg-green-100 text-green-800 rounded">গৃহীত</span>
-                                  }
-                                  {bid.status === 'rejected' && 
-                                    <span className="px-2 py-1 bg-red-100 text-red-800 rounded">প্রত্যাখ্যাত</span>
-                                  }
-                                </td>
-                                <td className="p-2">
-                                  {new Date(bid.createdAt).toLocaleDateString('bn-BD')}
-                                </td>
-                                <td className="p-2">
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm" 
-                                    onClick={() => {
-                                      navigate(`/product/${bid.productId}`);
-                                    }}
-                                  >
-                                    বিস্তারিত
-                                  </Button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+                      <BuyerBidsList bids={userBids} />
                     ) : (
                       <Card>
                         <CardContent className="text-center py-12">
@@ -332,6 +285,48 @@ const Dashboard = () => {
       </main>
       
       <Footer />
+    </div>
+  );
+};
+
+const BuyerBidsList = ({ bids }: { bids: Bid[] }) => {
+  return (
+    <div className="space-y-4">
+      {bids.length === 0 ? (
+        <div className="text-center py-8">
+          <p className="text-gray-500">আপনি এখনও কোন দর প্রস্তাব দেননি</p>
+        </div>
+      ) : (
+        bids.map((bid) => (
+          <div key={bid.id} className="border rounded-lg p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <Link 
+                to={`/product/${bid.productId}`} 
+                className="text-lg font-medium text-agriculture-green-dark hover:underline"
+              >
+                {(bid as any).productTitle || 'পণ্য দেখুন'}
+              </Link>
+              <span className={`px-2 py-1 text-xs rounded-full ${
+                bid.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                bid.status === 'accepted' ? 'bg-green-100 text-green-800' :
+                'bg-red-100 text-red-800'
+              }`}>
+                {bid.status === 'pending' ? 'অপেক্ষারত' : 
+                 bid.status === 'accepted' ? 'গৃহীত' : 'প্রত্যাখ্যাত'}
+              </span>
+            </div>
+            
+            <p className="mt-2">
+              <span className="text-gray-600">দর প্রস্তাব:</span>{" "}
+              <span className="font-semibold">৳ {bid.amount.toLocaleString()}</span>
+            </p>
+            
+            <p className="mt-1 text-sm text-gray-500">
+              প্রস্তাবের তারিখ: {new Date(bid.createdAt).toLocaleDateString('bn-BD')}
+            </p>
+          </div>
+        ))
+      )}
     </div>
   );
 };

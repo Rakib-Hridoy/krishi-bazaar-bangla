@@ -43,17 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select(`
-          id, 
-          name, 
-          email, 
-          role, 
-          phone, 
-          address, 
-          avatar_url,
-          (SELECT COUNT(*) FROM reviews WHERE to_user_id = profiles.id) as review_count,
-          (SELECT AVG(rating) FROM reviews WHERE to_user_id = profiles.id) as avg_rating
-        `)
+        .select('*')
         .eq('id', userId)
         .single();
 
@@ -63,10 +53,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (data) {
+        // Query reviews separately to get rating and review count
+        const { data: reviewData, error: reviewError } = await supabase
+          .from('reviews')
+          .select('rating')
+          .eq('to_user_id', userId);
+          
+        if (reviewError) {
+          console.error('Error fetching reviews:', reviewError);
+        }
+        
+        // Calculate average rating and review count
+        const reviewCount = reviewData?.length || 0;
+        const avgRating = reviewData?.length 
+          ? reviewData.reduce((sum, review) => sum + (review.rating || 0), 0) / reviewData.length 
+          : 0;
+
         return {
-          ...data,
-          rating: data.avg_rating || 0,
-          reviewCount: data.review_count || 0,
+          id: data.id,
+          name: data.name,
+          email: data.email,
+          role: data.role as 'buyer' | 'seller' | 'admin',
+          phone: data.phone,
+          address: data.address,
+          avatar_url: data.avatar_url,
+          rating: avgRating,
+          reviewCount: reviewCount
         } as Profile;
       }
 
