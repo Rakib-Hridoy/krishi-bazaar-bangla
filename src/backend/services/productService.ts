@@ -19,7 +19,7 @@ export async function getProducts(categoryFilter: string = 'all', searchQuery: s
         category,
         created_at,
         seller_id,
-        profiles:seller_id (name)
+        profiles (name)
       `)
       .order('created_at', { ascending: false });
 
@@ -47,7 +47,7 @@ export async function getProducts(categoryFilter: string = 'all', searchQuery: s
       location: item.location,
       images: item.images || [],
       sellerId: item.seller_id,
-      sellerName: item.profiles?.name || 'অজানা বিক্রেতা',
+      sellerName: item.profiles?.[0]?.name || 'অজানা বিক্রেতা',
       createdAt: item.created_at,
       category: item.category
     }));
@@ -74,7 +74,7 @@ export async function getProductById(id: string): Promise<Product | null> {
         category,
         created_at,
         seller_id,
-        profiles:seller_id (name, email, phone, address, avatar_url)
+        profiles (name, email, phone, address, avatar_url)
       `)
       .eq('id', id)
       .single();
@@ -95,7 +95,7 @@ export async function getProductById(id: string): Promise<Product | null> {
       location: data.location,
       images: data.images || [],
       sellerId: data.seller_id,
-      sellerName: data.profiles?.name || 'অজানা বিক্রেতা',
+      sellerName: data.profiles?.[0]?.name || 'অজানা বিক্রেতা',
       createdAt: data.created_at,
       category: data.category
     };
@@ -122,7 +122,7 @@ export async function getProductsByUserId(userId: string): Promise<Product[]> {
         category,
         created_at,
         seller_id,
-        profiles:seller_id (name)
+        profiles (name)
       `)
       .eq('seller_id', userId)
       .order('created_at', { ascending: false });
@@ -141,7 +141,7 @@ export async function getProductsByUserId(userId: string): Promise<Product[]> {
       location: item.location,
       images: item.images || [],
       sellerId: item.seller_id,
-      sellerName: item.profiles?.name || 'অজানা বিক্রেতা',
+      sellerName: item.profiles?.[0]?.name || 'অজানা বিক্রেতা',
       createdAt: item.created_at,
       category: item.category
     }));
@@ -214,7 +214,7 @@ export async function getRelatedProducts(productId: string, category: string, li
         category,
         created_at,
         seller_id,
-        profiles:seller_id (name)
+        profiles (name)
       `)
       .eq('category', category)
       .neq('id', productId) // Exclude current product
@@ -235,7 +235,7 @@ export async function getRelatedProducts(productId: string, category: string, li
       location: item.location,
       images: item.images || [],
       sellerId: item.seller_id,
-      sellerName: item.profiles?.name || 'অজানা বিক্রেতা',
+      sellerName: item.profiles?.[0]?.name || 'অজানা বিক্রেতা',
       createdAt: item.created_at,
       category: item.category
     }));
