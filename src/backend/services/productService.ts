@@ -1,55 +1,48 @@
 
-import { supabase } from '../supabase/client';
+import { ObjectId } from 'mongodb';
 import { Product } from '@/types';
+import { collections } from '../mongodb/client';
 
 // Get all products with optional filtering
 export async function getProducts(categoryFilter: string = 'all', searchQuery: string = ''): Promise<Product[]> {
   try {
-    let query = supabase
-      .from('products')
-      .select(`
-        id,
-        title,
-        description,
-        price,
-        quantity,
-        unit,
-        location,
-        images,
-        category,
-        created_at,
-        seller_id,
-        profiles(name)
-      `)
-      .order('created_at', { ascending: false });
-
+    let query: any = {};
+    
     if (categoryFilter && categoryFilter !== 'all') {
-      query = query.eq('category', categoryFilter);
+      query.category = categoryFilter;
     }
-
+    
     if (searchQuery) {
-      query = query.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%,location.ilike.%${searchQuery}%`);
+      query.$or = [
+        { title: { $regex: searchQuery, $options: 'i' } },
+        { description: { $regex: searchQuery, $options: 'i' } },
+        { location: { $regex: searchQuery, $options: 'i' } }
+      ];
     }
+    
+    // Get products based on query
+    const productsData = await collections.products.find(query).sort({ createdAt: -1 }).toArray();
+    
+    // Get seller ids to fetch seller info
+    const sellerIds = productsData.map(product => product.sellerId);
+    
+    // Get seller profiles in a single query
+    const sellers = await collections.profiles
+      .find({ _id: { $in: sellerIds } })
+      .project({ _id: 1, name: 1 })
+      .toArray();
+    
+    // Create a map of seller IDs to names for quick lookup
+    const sellerMap = new Map();
+    sellers.forEach(seller => {
+      sellerMap.set(seller._id.toString(), seller.name);
+    });
 
-    const { data, error } = await query;
-
-    if (error) {
-      throw error;
-    }
-
-    // Log the first item to see its structure
-    if (data && data.length > 0) {
-      console.log('First product data structure:', JSON.stringify(data[0], null, 2));
-    }
-
-    return data.map(item => {
-      // Safely access the seller name from the profiles array
-      const sellerName = Array.isArray(item.profiles) && item.profiles.length > 0 && item.profiles[0]?.name 
-        ? item.profiles[0].name 
-        : 'অজানা বিক্রেতা';
-        
+    // Format products for response
+    return productsData.map(item => {
+      const sellerId = item.sellerId.toString();
       return {
-        id: item.id,
+        id: item._id.toString(),
         title: item.title,
         description: item.description || '',
         price: Number(item.price),
@@ -57,9 +50,9 @@ export async function getProducts(categoryFilter: string = 'all', searchQuery: s
         unit: item.unit,
         location: item.location,
         images: item.images || [],
-        sellerId: item.seller_id,
-        sellerName,
-        createdAt: item.created_at,
+        sellerId: sellerId,
+        sellerName: sellerMap.get(sellerId) || 'অজানা বিক্রেতা',
+        createdAt: item.createdAt,
         category: item.category
       };
     });
@@ -72,52 +65,31 @@ export async function getProducts(categoryFilter: string = 'all', searchQuery: s
 // Get product by ID
 export async function getProductById(id: string): Promise<Product | null> {
   try {
-    const { data, error } = await supabase
-      .from('products')
-      .select(`
-        id,
-        title,
-        description,
-        price,
-        quantity,
-        unit,
-        location,
-        images,
-        category,
-        created_at,
-        seller_id,
-        profiles(name, email, phone, address, avatar_url)
-      `)
-      .eq('id', id)
-      .single();
-
-    if (error) {
-      throw error;
+    // Check if id is valid ObjectId
+    if (!ObjectId.isValid(id)) {
+      return null;
     }
 
-    if (!data) return null;
-    
-    // Log the data structure
-    console.log('Product by ID data structure:', JSON.stringify(data, null, 2));
-    
-    // Safely access the seller name from the profiles array
-    const sellerName = Array.isArray(data.profiles) && data.profiles.length > 0 && data.profiles[0]?.name 
-      ? data.profiles[0].name 
-      : 'অজানা বিক্রেতা';
+    const productData = await collections.products.findOne({ _id: new ObjectId(id) });
 
+    if (!productData) return null;
+    
+    // Get seller profile
+    const seller = await collections.profiles.findOne({ _id: productData.sellerId });
+    
     return {
-      id: data.id,
-      title: data.title,
-      description: data.description || '',
-      price: Number(data.price),
-      quantity: Number(data.quantity),
-      unit: data.unit,
-      location: data.location,
-      images: data.images || [],
-      sellerId: data.seller_id,
-      sellerName,
-      createdAt: data.created_at,
-      category: data.category
+      id: productData._id.toString(),
+      title: productData.title,
+      description: productData.description || '',
+      price: Number(productData.price),
+      quantity: Number(productData.quantity),
+      unit: productData.unit,
+      location: productData.location,
+      images: productData.images || [],
+      sellerId: productData.sellerId.toString(),
+      sellerName: seller?.name || 'অজানা বিক্রেতা',
+      createdAt: productData.createdAt,
+      category: productData.category
     };
   } catch (error) {
     console.error('Error fetching product by ID:', error);
@@ -128,37 +100,26 @@ export async function getProductById(id: string): Promise<Product | null> {
 // Get products by seller ID
 export async function getProductsByUserId(userId: string): Promise<Product[]> {
   try {
-    const { data, error } = await supabase
-      .from('products')
-      .select(`
-        id,
-        title,
-        description,
-        price,
-        quantity,
-        unit,
-        location,
-        images,
-        category,
-        created_at,
-        seller_id,
-        profiles(name)
-      `)
-      .eq('seller_id', userId)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      throw error;
+    // Check if userId is valid ObjectId
+    if (!ObjectId.isValid(userId)) {
+      return [];
     }
 
-    return data.map(item => {
-      // Safely access the seller name from the profiles array
-      const sellerName = Array.isArray(item.profiles) && item.profiles.length > 0 && item.profiles[0]?.name 
-        ? item.profiles[0].name 
-        : 'অজানা বিক্রেতা';
-        
+    const sellerId = new ObjectId(userId);
+    
+    // Find products by seller ID
+    const productsData = await collections.products
+      .find({ sellerId })
+      .sort({ createdAt: -1 })
+      .toArray();
+    
+    // Get seller name
+    const seller = await collections.profiles.findOne({ _id: sellerId });
+    const sellerName = seller?.name || 'অজানা বিক্রেতা';
+
+    return productsData.map(item => {
       return {
-        id: item.id,
+        id: item._id.toString(),
         title: item.title,
         description: item.description || '',
         price: Number(item.price),
@@ -166,9 +127,9 @@ export async function getProductsByUserId(userId: string): Promise<Product[]> {
         unit: item.unit,
         location: item.location,
         images: item.images || [],
-        sellerId: item.seller_id,
+        sellerId: userId,
         sellerName,
-        createdAt: item.created_at,
+        createdAt: item.createdAt,
         category: item.category
       };
     });
@@ -181,26 +142,30 @@ export async function getProductsByUserId(userId: string): Promise<Product[]> {
 // Add new product
 export async function addProduct(productData: Omit<Product, 'id' | 'sellerId' | 'sellerName' | 'createdAt'> & { sellerId: string }) {
   try {
-    const { data, error } = await supabase
-      .from('products')
-      .insert({
-        title: productData.title,
-        description: productData.description,
-        price: productData.price,
-        quantity: productData.quantity,
-        unit: productData.unit,
-        location: productData.location,
-        images: productData.images,
-        category: productData.category,
-        seller_id: productData.sellerId
-      })
-      .select('*');
+    const newProduct = {
+      title: productData.title,
+      description: productData.description,
+      price: productData.price,
+      quantity: productData.quantity,
+      unit: productData.unit,
+      location: productData.location,
+      images: productData.images,
+      category: productData.category,
+      sellerId: new ObjectId(productData.sellerId),
+      createdAt: new Date().toISOString()
+    };
 
-    if (error) {
-      throw error;
-    }
-
-    return data[0];
+    const result = await collections.products.insertOne(newProduct);
+    
+    const seller = await collections.profiles.findOne({ _id: new ObjectId(productData.sellerId) });
+    
+    return {
+      id: result.insertedId.toString(),
+      ...newProduct,
+      sellerId: productData.sellerId,
+      sellerName: seller?.name || 'অজানা বিক্রেতা',
+      createdAt: newProduct.createdAt
+    };
   } catch (error) {
     console.error('Error adding product:', error);
     throw error;
@@ -210,13 +175,14 @@ export async function addProduct(productData: Omit<Product, 'id' | 'sellerId' | 
 // Delete product
 export async function deleteProduct(productId: string): Promise<void> {
   try {
-    const { error } = await supabase
-      .from('products')
-      .delete()
-      .eq('id', productId);
-
-    if (error) {
-      throw error;
+    if (!ObjectId.isValid(productId)) {
+      throw new Error('Invalid product ID');
+    }
+    
+    const result = await collections.products.deleteOne({ _id: new ObjectId(productId) });
+    
+    if (result.deletedCount === 0) {
+      throw new Error('Product not found');
     }
   } catch (error) {
     console.error('Error deleting product:', error);
@@ -227,39 +193,36 @@ export async function deleteProduct(productId: string): Promise<void> {
 // Get related products
 export async function getRelatedProducts(productId: string, category: string, limit: number = 4): Promise<Product[]> {
   try {
-    const { data, error } = await supabase
-      .from('products')
-      .select(`
-        id,
-        title,
-        description,
-        price,
-        quantity,
-        unit,
-        location,
-        images,
-        category,
-        created_at,
-        seller_id,
-        profiles(name)
-      `)
-      .eq('category', category)
-      .neq('id', productId) // Exclude current product
-      .order('created_at', { ascending: false })
-      .limit(limit);
-
-    if (error) {
-      throw error;
-    }
-
-    return data.map(item => {
-      // Safely access the seller name from the profiles array
-      const sellerName = Array.isArray(item.profiles) && item.profiles.length > 0 && item.profiles[0]?.name 
-        ? item.profiles[0].name 
-        : 'অজানা বিক্রেতা';
-        
+    const query = { 
+      category,
+      _id: { $ne: new ObjectId(productId) }
+    };
+    
+    const productsData = await collections.products
+      .find(query)
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .toArray();
+    
+    // Get seller ids
+    const sellerIds = productsData.map(product => product.sellerId);
+    
+    // Get seller names
+    const sellers = await collections.profiles
+      .find({ _id: { $in: sellerIds } })
+      .project({ _id: 1, name: 1 })
+      .toArray();
+    
+    // Create a map of seller IDs to names for quick lookup
+    const sellerMap = new Map();
+    sellers.forEach(seller => {
+      sellerMap.set(seller._id.toString(), seller.name);
+    });
+    
+    return productsData.map(item => {
+      const sellerId = item.sellerId.toString();
       return {
-        id: item.id,
+        id: item._id.toString(),
         title: item.title,
         description: item.description || '',
         price: Number(item.price),
@@ -267,9 +230,9 @@ export async function getRelatedProducts(productId: string, category: string, li
         unit: item.unit,
         location: item.location,
         images: item.images || [],
-        sellerId: item.seller_id,
-        sellerName,
-        createdAt: item.created_at,
+        sellerId: sellerId,
+        sellerName: sellerMap.get(sellerId) || 'অজানা বিক্রেতা',
+        createdAt: item.createdAt,
         category: item.category
       };
     });
