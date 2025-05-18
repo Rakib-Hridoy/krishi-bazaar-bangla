@@ -18,7 +18,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
 const Login = () => {
-  const [email, setEmail] = useState('');
+  const [emailOrPhone, setEmailOrPhone] = useState('');
   const [password, setPassword] = useState('');
   const [formError, setFormError] = useState('');
   const { login, isAuthenticated, isLoading } = useAuth();
@@ -35,13 +35,13 @@ const Login = () => {
     e.preventDefault();
     setFormError('');
 
-    if (!email || !password) {
+    if (!emailOrPhone || !password) {
       setFormError('সকল ফিল্ড পূরণ করুন');
       return;
     }
 
     try {
-      await login(email, password);
+      await login(emailOrPhone, password);
     } catch (error) {
       // Error is already handled in the login function
       console.error('Login submission error:', error);
@@ -70,19 +70,19 @@ const Login = () => {
             <CardHeader className="space-y-1">
               <CardTitle className="text-2xl text-center">লগইন</CardTitle>
               <CardDescription className="text-center">
-                আপনার অ্যাকাউন্টে লগইন করতে আপনার ইমেইল এবং পাসওয়ার্ড দিন
+                আপনার অ্যাকাউন্টে লগইন করতে আপনার ইমেইল অথবা ফোন নাম্বার এবং পাসওয়ার্ড দিন
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">ইমেইল</Label>
+                  <Label htmlFor="emailOrPhone">ইমেইল অথবা ফোন নাম্বার</Label>
                   <Input 
-                    id="email"
-                    type="email"
-                    placeholder="আপনার ইমেইল"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    id="emailOrPhone"
+                    type="text"
+                    placeholder="আপনার ইমেইল অথবা ফোন নাম্বার"
+                    value={emailOrPhone}
+                    onChange={(e) => setEmailOrPhone(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">

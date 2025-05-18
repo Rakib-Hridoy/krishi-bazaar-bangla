@@ -21,8 +21,8 @@ interface AuthContextType {
   user: User | null;
   profile: Profile | null;
   session: Session | null;
-  login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string, role: 'buyer' | 'seller') => Promise<void>;
+  login: (emailOrPhone: string, password: string) => Promise<void>;
+  register: (name: string, email: string, phone: string, password: string, role: 'buyer' | 'seller') => Promise<void>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -141,26 +141,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setupAuth();
   }, []);
 
-  // Login function
-  const login = async (email: string, password: string) => {
+  // Login function - now supports email or phone
+  const login = async (emailOrPhone: string, password: string) => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-
-      if (error) {
-        throw error;
+      const isEmail = emailOrPhone.includes('@');
+      
+      let loginResult;
+      
+      if (isEmail) {
+        // Login with email directly
+        loginResult = await supabase.auth.signInWithPassword({
+          email: emailOrPhone,
+          password
+        });
+      } else {
+        // Login with phone - first find the corresponding email
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('phone', emailOrPhone)
+          .single();
+          
+        if (error || !data) {
+          throw new Error('ফোন নাম্বার খুঁজে পাওয়া যায়নি');
+        }
+        
+        // Login with the email associated with the phone number
+        loginResult = await supabase.auth.signInWithPassword({
+          email: data.email,
+          password
+        });
+      }
+      
+      if (loginResult.error) {
+        throw loginResult.error;
       }
 
-      if (data?.user) {
-        const userProfile = await fetchUserProfile(data.user.id);
+      if (loginResult.data?.user) {
+        const userProfile = await fetchUserProfile(loginResult.data.user.id);
         setProfile(userProfile);
         
         toast({
           title: "লগইন সফল",
-          description: `স্বাগতম, ${userProfile?.name || data.user.email}!`,
+          description: `স্বাগতম, ${userProfile?.name || loginResult.data.user.email}!`,
         });
 
         navigate('/dashboard');
@@ -178,17 +202,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Register function
-  const register = async (name: string, email: string, password: string, role: 'buyer' | 'seller') => {
+  // Register function - now requires phone
+  const register = async (name: string, email: string, phone: string, password: string, role: 'buyer' | 'seller') => {
     try {
       setIsLoading(true);
       
+      // Check if phone number is already registered
+      const { data: existingPhone, error: phoneError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('phone', phone)
+        .maybeSingle();
+        
+      if (existingPhone) {
+        throw new Error('এই ফোন নাম্বারটি ইতিমধ্যে ব্যবহৃত হয়েছে');
+      }
+      
+      // Register with Supabase
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             name,
+            phone,
             role,
           }
         }
