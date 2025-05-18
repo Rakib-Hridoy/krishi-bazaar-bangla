@@ -96,7 +96,6 @@ export class ProductModel {
     }
   }
 
-  // Other methods from productService.ts...
   // Get products by seller ID
   static async findByUserId(userId: string): Promise<Product[]> {
     try {
