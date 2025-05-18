@@ -1,3 +1,4 @@
+
 import { ObjectId } from 'mongodb';
 import { Product } from '@/types';
 import { collections } from '../mongodb/client';

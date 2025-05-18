@@ -1,7 +1,6 @@
 
 import { ProductController } from '../controllers/ProductController';
 import { Product } from '@/types';
-import { ObjectId } from 'mongodb';
 
 // Get all products with optional filtering
 export async function getProducts(categoryFilter: string = 'all', searchQuery: string = ''): Promise<Product[]> {
