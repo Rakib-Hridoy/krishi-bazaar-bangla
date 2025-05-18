@@ -2,7 +2,7 @@
 import { MongoClient, ServerApiVersion } from 'mongodb';
 
 // MongoDB connection string - should be in an environment variable in production
-const MONGODB_URI = "mongodb+srv://username:password@cluster0.mongodb.net/?retryWrites=true&w=majority";
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://username:password@cluster0.mongodb.net/?retryWrites=true&w=majority";
 
 // Create a MongoClient with options
 const client = new MongoClient(MONGODB_URI, {
