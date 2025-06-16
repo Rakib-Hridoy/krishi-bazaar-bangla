@@ -22,6 +22,14 @@ export interface MockQuery {
   toArray: () => Promise<MockDocument[]>;
 }
 
+// Define types for MongoDB-like query operators
+interface QueryOperator {
+  $ne?: any;
+  $in?: any[];
+  $regex?: string;
+  $options?: string;
+}
+
 // Mock data storage
 const mockData: { [collection: string]: MockDocument[] } = {
   products: [],
@@ -50,20 +58,22 @@ class MockMongoCollection implements MockCollection {
     if (Object.keys(query).length > 0) {
       filteredData = data.filter(doc => {
         return Object.entries(query).every(([key, value]) => {
-          if (key === '_id' && typeof value === 'object' && value.$ne) {
-            return doc._id !== value.$ne;
+          if (key === '_id' && typeof value === 'object' && (value as QueryOperator).$ne) {
+            return doc._id !== (value as QueryOperator).$ne;
           }
-          if (key === '_id' && typeof value === 'object' && value.$in) {
-            return value.$in.some((id: any) => id.toString() === doc._id);
+          if (key === '_id' && typeof value === 'object' && (value as QueryOperator).$in) {
+            return (value as QueryOperator).$in!.some((id: any) => id.toString() === doc._id);
           }
-          if (typeof value === 'object' && value.$regex) {
-            return new RegExp(value.$regex, value.$options || '').test(doc[key]);
+          if (typeof value === 'object' && (value as QueryOperator).$regex) {
+            const operator = value as QueryOperator;
+            return new RegExp(operator.$regex!, operator.$options || '').test(doc[key]);
           }
           if (key === '$or') {
-            return value.some((condition: any) => {
+            return (value as any[]).some((condition: any) => {
               return Object.entries(condition).some(([condKey, condValue]) => {
-                if (typeof condValue === 'object' && condValue.$regex) {
-                  return new RegExp(condValue.$regex, condValue.$options || '').test(doc[condKey]);
+                if (typeof condValue === 'object' && (condValue as QueryOperator).$regex) {
+                  const operator = condValue as QueryOperator;
+                  return new RegExp(operator.$regex!, operator.$options || '').test(doc[condKey]);
                 }
                 return doc[condKey] === condValue;
               });

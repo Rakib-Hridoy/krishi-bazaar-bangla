@@ -9,8 +9,6 @@ export class AuthController {
     // Check if input is email or phone
     const isEmail = emailOrPhone.includes('@');
     
-    let userData;
-    
     if (isEmail) {
       // Login with email
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -48,7 +46,7 @@ export class AuthController {
       throw new Error('এই ফোন নাম্বারটি ইতিমধ্যে ব্যবহৃত হয়েছে');
     }
     
-    // Register with Supabase
+    // Register with mock auth
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
