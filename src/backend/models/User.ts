@@ -1,22 +1,38 @@
 
-import { ObjectId } from 'mongodb';
 import { User } from '@/types';
 import { collections } from '../mongodb/client';
+
+// Mock ObjectId class for browser environment
+class MockObjectId {
+  private id: string;
+  
+  constructor(id?: string) {
+    this.id = id || Math.random().toString(36).substr(2, 9);
+  }
+  
+  toString(): string {
+    return this.id;
+  }
+  
+  static isValid(id: string): boolean {
+    return typeof id === 'string' && id.length > 0;
+  }
+}
 
 export class UserModel {
   // Get user by ID
   static async findById(userId: string): Promise<User | null> {
     try {
-      if (!ObjectId.isValid(userId)) {
+      if (!MockObjectId.isValid(userId)) {
         return null;
       }
       
-      const userData = await collections.profiles.findOne({ _id: new ObjectId(userId) });
+      const userData = await collections.profiles.findOne({ _id: userId });
       
       if (!userData) return null;
       
       const reviewData = await collections.reviews
-        .find({ to_user_id: new ObjectId(userId) })
+        .find({ to_user_id: userId })
         .toArray();
       
       // Calculate average rating and review count
@@ -113,12 +129,12 @@ export class UserModel {
   // Update user profile
   static async updateProfile(userId: string, profileData: Partial<User>): Promise<User | null> {
     try {
-      if (!ObjectId.isValid(userId)) {
+      if (!MockObjectId.isValid(userId)) {
         return null;
       }
 
       const result = await collections.profiles.findOneAndUpdate(
-        { _id: new ObjectId(userId) },
+        { _id: userId },
         { 
           $set: {
             name: profileData.name,

@@ -1,7 +1,23 @@
 
-import { ObjectId } from 'mongodb';
 import { Product } from '@/types';
 import { collections } from '../mongodb/client';
+
+// Mock ObjectId class for browser environment
+class MockObjectId {
+  private id: string;
+  
+  constructor(id?: string) {
+    this.id = id || Math.random().toString(36).substr(2, 9);
+  }
+  
+  toString(): string {
+    return this.id;
+  }
+  
+  static isValid(id: string): boolean {
+    return typeof id === 'string' && id.length > 0;
+  }
+}
 
 export class ProductModel {
   // Get all products with optional filtering
@@ -66,11 +82,11 @@ export class ProductModel {
   // Get product by ID
   static async findById(id: string): Promise<Product | null> {
     try {
-      if (!ObjectId.isValid(id)) {
+      if (!MockObjectId.isValid(id)) {
         return null;
       }
 
-      const productData = await collections.products.findOne({ _id: new ObjectId(id) });
+      const productData = await collections.products.findOne({ _id: id });
 
       if (!productData) return null;
       
@@ -100,12 +116,12 @@ export class ProductModel {
   // Get products by seller ID
   static async findByUserId(userId: string): Promise<Product[]> {
     try {
-      // Check if userId is valid ObjectId
-      if (!ObjectId.isValid(userId)) {
+      // Check if userId is valid
+      if (!MockObjectId.isValid(userId)) {
         return [];
       }
 
-      const sellerId = new ObjectId(userId);
+      const sellerId = userId;
       
       // Find products by seller ID
       const productsData = await collections.products
@@ -151,13 +167,13 @@ export class ProductModel {
         location: productData.location,
         images: productData.images,
         category: productData.category,
-        sellerId: new ObjectId(productData.sellerId),
+        sellerId: productData.sellerId,
         createdAt: new Date().toISOString()
       };
 
       const result = await collections.products.insertOne(newProduct);
       
-      const seller = await collections.profiles.findOne({ _id: new ObjectId(productData.sellerId) });
+      const seller = await collections.profiles.findOne({ _id: productData.sellerId });
       
       return {
         id: result.insertedId.toString(),
@@ -175,11 +191,11 @@ export class ProductModel {
   // Delete product
   static async delete(productId: string): Promise<void> {
     try {
-      if (!ObjectId.isValid(productId)) {
+      if (!MockObjectId.isValid(productId)) {
         throw new Error('Invalid product ID');
       }
       
-      const result = await collections.products.deleteOne({ _id: new ObjectId(productId) });
+      const result = await collections.products.deleteOne({ _id: productId });
       
       if (result.deletedCount === 0) {
         throw new Error('Product not found');
@@ -195,7 +211,7 @@ export class ProductModel {
     try {
       const query = { 
         category,
-        _id: { $ne: new ObjectId(productId) }
+        _id: { $ne: productId }
       };
       
       const productsData = await collections.products

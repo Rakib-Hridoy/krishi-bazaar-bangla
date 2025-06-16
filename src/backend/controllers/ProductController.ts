@@ -1,7 +1,6 @@
 
 import { ProductModel } from '../models/Product';
 import { Product } from '@/types';
-import { ObjectId } from 'mongodb';
 import { collections } from '../mongodb/client';
 
 export class ProductController {
