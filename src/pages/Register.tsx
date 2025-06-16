@@ -31,7 +31,6 @@ const Register = () => {
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState<'buyer' | 'seller'>(defaultRole as 'buyer' | 'seller');
@@ -51,15 +50,8 @@ const Register = () => {
     e.preventDefault();
     setFormError('');
 
-    if (!name || !email || !phone || !password || !confirmPassword) {
+    if (!name || !email || !password || !confirmPassword) {
       setFormError('সকল ফিল্ড পূরণ করুন');
-      return;
-    }
-
-    // Validate phone number format (Bangladesh phone number)
-    const phoneRegex = /^(\+8801|01)[3-9][0-9]{8}$/;
-    if (!phoneRegex.test(phone)) {
-      setFormError('সঠিক বাংলাদেশি ফোন নাম্বার দিন (উদাহরণ: 01XXXXXXXXX)');
       return;
     }
 
@@ -74,7 +66,7 @@ const Register = () => {
     }
 
     try {
-      await register(name, email, phone, password, role);
+      await register(name, email, password, role);
     } catch (error) {
       // Error is already handled in the register function
       console.error('Registration submission error:', error);
@@ -126,17 +118,6 @@ const Register = () => {
                     placeholder="আপনার ইমেইল"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="phone">ফোন নাম্বার</Label>
-                  <Input 
-                    id="phone"
-                    type="tel"
-                    placeholder="আপনার ফোন নাম্বার (উদাহরণ: 01XXXXXXXXX)"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
                   />
                 </div>
                 

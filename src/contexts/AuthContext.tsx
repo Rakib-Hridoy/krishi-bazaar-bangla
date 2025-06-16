@@ -1,12 +1,9 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
+import { User, Session } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
-
-interface User {
-  id: string;
-  email: string;
-}
 
 interface Profile {
   id: string;
@@ -23,9 +20,9 @@ interface Profile {
 interface AuthContextType {
   user: User | null;
   profile: Profile | null;
-  session: any | null;
-  login: (emailOrPhone: string, password: string) => Promise<void>;
-  register: (name: string, email: string, phone: string, password: string, role: 'buyer' | 'seller') => Promise<void>;
+  session: Session | null;
+  login: (email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string, role: 'buyer' | 'seller') => Promise<void>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -34,65 +31,58 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock authentication for development
-const mockAuth = {
-  login: async (emailOrPhone: string, password: string) => {
-    // In a real app, this would be an API call
-    if (password === 'password') {
-      const user = {
-        id: '123',
-        email: emailOrPhone.includes('@') ? emailOrPhone : 'user@example.com',
-      };
-      
-      localStorage.setItem('user', JSON.stringify(user));
-      return user;
-    }
-    throw new Error('Invalid credentials');
-  },
-  register: async (name: string, email: string, phone: string, password: string, role: 'buyer' | 'seller') => {
-    // In a real app, this would be an API call
-    const user = {
-      id: '123',
-      email,
-      name,
-      phone,
-      role,
-    };
-    
-    localStorage.setItem('user', JSON.stringify(user));
-    return user;
-  },
-  logout: async () => {
-    localStorage.removeItem('user');
-  },
-  getSession: () => {
-    const user = localStorage.getItem('user');
-    return user ? JSON.parse(user) : null;
-  }
-};
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [session, setSession] = useState<any | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Fetch user profile
+  // Fetch user profile from Supabase
   const fetchUserProfile = async (userId: string) => {
     try {
-      // In a real app, this would be an API call to fetch profile data
-      // For now, we'll just mock it
-      const mockProfile = {
-        id: userId,
-        name: 'Test User',
-        email: user?.email || '',
-        role: 'buyer' as const,
-        rating: 4.5,
-        reviewCount: 10
-      };
-      
-      return mockProfile;
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching user profile:', error);
+        return null;
+      }
+
+      if (data) {
+        // Query reviews separately to get rating and review count
+        const { data: reviewData, error: reviewError } = await supabase
+          .from('reviews')
+          .select('rating')
+          .eq('to_user_id', userId);
+          
+        if (reviewError) {
+          console.error('Error fetching reviews:', reviewError);
+        }
+        
+        // Calculate average rating and review count
+        const reviewCount = reviewData?.length || 0;
+        const avgRating = reviewData?.length 
+          ? reviewData.reduce((sum, review) => sum + (review.rating || 0), 0) / reviewData.length 
+          : 0;
+
+        return {
+          id: data.id,
+          name: data.name,
+          email: data.email,
+          role: data.role as 'buyer' | 'seller' | 'admin',
+          phone: data.phone,
+          address: data.address,
+          avatar_url: data.avatar_url,
+          rating: avgRating,
+          reviewCount: reviewCount
+        } as Profile;
+      }
+
+      return null;
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
       return null;
@@ -111,38 +101,70 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const setupAuth = async () => {
+      // Set up auth state change listener
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        async (event, session) => {
+          setSession(session);
+          setUser(session?.user ?? null);
+
+          // Fetch user profile on auth state change
+          if (session?.user) {
+            setTimeout(async () => {
+              const userProfile = await fetchUserProfile(session.user.id);
+              setProfile(userProfile);
+              setIsLoading(false);
+            }, 0);
+          } else {
+            setProfile(null);
+            setIsLoading(false);
+          }
+        }
+      );
+
       // Check for existing session
-      const savedUser = mockAuth.getSession();
-      setUser(savedUser);
-      
-      if (savedUser) {
-        const userProfile = await fetchUserProfile(savedUser.id);
+      const { data: { session } } = await supabase.auth.getSession();
+      setSession(session);
+      setUser(session?.user ?? null);
+
+      if (session?.user) {
+        const userProfile = await fetchUserProfile(session.user.id);
         setProfile(userProfile);
       }
 
       setIsLoading(false);
+      
+      return () => {
+        subscription.unsubscribe();
+      };
     };
 
     setupAuth();
   }, []);
 
   // Login function
-  const login = async (emailOrPhone: string, password: string) => {
+  const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
-      
-      const loggedInUser = await mockAuth.login(emailOrPhone, password);
-      setUser(loggedInUser);
-      
-      const userProfile = await fetchUserProfile(loggedInUser.id);
-      setProfile(userProfile);
-      
-      toast({
-        title: "লগইন সফল",
-        description: `স্বাগতম, ${userProfile?.name || loggedInUser.email}!`,
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
       });
 
-      navigate('/dashboard');
+      if (error) {
+        throw error;
+      }
+
+      if (data?.user) {
+        const userProfile = await fetchUserProfile(data.user.id);
+        setProfile(userProfile);
+        
+        toast({
+          title: "লগইন সফল",
+          description: `স্বাগতম, ${userProfile?.name || data.user.email}!`,
+        });
+
+        navigate('/dashboard');
+      }
     } catch (error: any) {
       console.error('Login error:', error);
       toast({
@@ -157,22 +179,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Register function
-  const register = async (name: string, email: string, phone: string, password: string, role: 'buyer' | 'seller') => {
+  const register = async (name: string, email: string, password: string, role: 'buyer' | 'seller') => {
     try {
       setIsLoading(true);
       
-      const registeredUser = await mockAuth.register(name, email, phone, password, role);
-      setUser(registeredUser);
-      
-      const userProfile = await fetchUserProfile(registeredUser.id);
-      setProfile(userProfile);
-      
-      toast({
-        title: "রেজিস্ট্রেশন সফল",
-        description: "আপনার অ্যাকাউন্ট সফলভাবে তৈরি করা হয়েছে।",
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name,
+            role,
+          }
+        }
       });
-      
-      navigate('/dashboard');
+
+      if (error) {
+        throw error;
+      }
+
+      if (data?.user) {
+        toast({
+          title: "রেজিস্ট্রেশন সফল",
+          description: "আপনার অ্যাকাউন্ট সফলভাবে তৈরি করা হয়েছে।",
+        });
+        
+        navigate('/dashboard');
+      }
     } catch (error: any) {
       console.error('Registration error:', error);
       toast({
@@ -189,8 +222,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Logout function
   const logout = async () => {
     try {
-      await mockAuth.logout();
-      setUser(null);
+      await supabase.auth.signOut();
       setProfile(null);
       navigate('/');
       

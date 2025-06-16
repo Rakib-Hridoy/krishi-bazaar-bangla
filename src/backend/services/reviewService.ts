@@ -1,30 +1,48 @@
 
-import { collections } from '../mongodb/client';
+import { supabase } from '../supabase/client';
 import { Review } from '@/types';
 
 // Get reviews for a specific user
 export async function getUserReviews(userId: string): Promise<Review[]> {
   try {
     // Fetch reviews
-    const reviewsData = await collections.reviews
-      .find({ to_user_id: userId })
-      .toArray();
+    const { data: reviewsData, error: reviewsError } = await supabase
+      .from('reviews')
+      .select(`
+        id,
+        from_user_id,
+        to_user_id,
+        rating,
+        comment,
+        created_at
+      `)
+      .eq('to_user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (reviewsError) {
+      throw reviewsError;
+    }
     
-    // Fetch user names
+    // Fetch user names in a separate query
     const userIds = reviewsData.map(review => review.from_user_id);
-    const usersData = await collections.profiles
-      .find({ _id: { $in: userIds } })
-      .toArray();
+    const { data: usersData, error: usersError } = await supabase
+      .from('profiles')
+      .select('id, name')
+      .in('id', userIds);
+      
+    if (usersError) {
+      throw usersError;
+    }
     
     // Create a map of user IDs to names
     const userMap = new Map();
     usersData?.forEach(user => {
-      userMap.set(user._id, user.name);
+      userMap.set(user.id, user.name);
     });
 
     // Combine data
     return reviewsData.map(item => ({
-      id: item._id,
+      id: item.id,
       fromUserId: item.from_user_id,
       fromUserName: userMap.get(item.from_user_id) || 'অজানা ব্যবহারকারী',
       toUserId: item.to_user_id,
@@ -41,15 +59,21 @@ export async function getUserReviews(userId: string): Promise<Review[]> {
 // Add a new review
 export async function addReview(reviewData: { fromUserId: string, toUserId: string, rating: number, comment: string }) {
   try {
-    const result = await collections.reviews.insertOne({
-      from_user_id: reviewData.fromUserId,
-      to_user_id: reviewData.toUserId,
-      rating: reviewData.rating,
-      comment: reviewData.comment,
-      created_at: new Date().toISOString()
-    });
+    const { data, error } = await supabase
+      .from('reviews')
+      .insert({
+        from_user_id: reviewData.fromUserId,
+        to_user_id: reviewData.toUserId,
+        rating: reviewData.rating,
+        comment: reviewData.comment
+      })
+      .select();
 
-    return { id: result.insertedId, ...reviewData, created_at: new Date().toISOString() };
+    if (error) {
+      throw error;
+    }
+
+    return data[0];
   } catch (error) {
     console.error('Error adding review:', error);
     throw error;
@@ -60,24 +84,42 @@ export async function addReview(reviewData: { fromUserId: string, toUserId: stri
 export async function getReviewsByUser(userId: string): Promise<Review[]> {
   try {
     // Fetch reviews
-    const reviewsData = await collections.reviews
-      .find({ from_user_id: userId })
-      .toArray();
+    const { data: reviewsData, error: reviewsError } = await supabase
+      .from('reviews')
+      .select(`
+        id,
+        from_user_id,
+        to_user_id,
+        rating,
+        comment,
+        created_at
+      `)
+      .eq('from_user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (reviewsError) {
+      throw reviewsError;
+    }
     
-    // Fetch user names
+    // Fetch user names in a separate query
     const userIds = reviewsData.map(review => review.to_user_id);
-    const usersData = await collections.profiles
-      .find({ _id: { $in: userIds } })
-      .toArray();
+    const { data: usersData, error: usersError } = await supabase
+      .from('profiles')
+      .select('id, name')
+      .in('id', userIds);
+      
+    if (usersError) {
+      throw usersError;
+    }
     
     // Create a map of user IDs to names
     const userMap = new Map();
     usersData?.forEach(user => {
-      userMap.set(user._id, user.name);
+      userMap.set(user.id, user.name);
     });
 
     return reviewsData.map(item => ({
-      id: item._id,
+      id: item.id,
       fromUserId: item.from_user_id,
       fromUserName: 'আপনি',
       toUserId: item.to_user_id,

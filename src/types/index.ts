@@ -38,8 +38,8 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  phone?: string; // Phone now added as an optional field
   role: 'buyer' | 'seller' | 'admin';
+  phone?: string;
   address?: string;
   avatar?: string;
   rating?: number;
