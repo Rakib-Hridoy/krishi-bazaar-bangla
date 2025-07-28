@@ -17,6 +17,8 @@ import UserProfile from "./pages/UserProfile";
 import EditProfile from "./pages/EditProfile";
 import ReviewForm from "./pages/ReviewForm";
 import { AuthProvider } from "./contexts/AuthContext";
+import PWAInstallPrompt from "./components/PWAInstallPrompt";
+import ChatFloatingButton from "./components/ChatFloatingButton";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +29,8 @@ const App = () => (
         <AuthProvider>
           <Toaster />
           <Sonner />
+          <PWAInstallPrompt />
+          <ChatFloatingButton />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
