@@ -51,7 +51,14 @@ export const useDeliveryTracking = () => {
       const { data, error } = await query.order('updated_at', { ascending: false });
 
       if (error) throw error;
-      setTrackingData(data || []);
+      
+      // Map database fields to interface structure
+      const mappedData: DeliveryTrackingData[] = (data || []).map((item: any) => ({
+        ...item,
+        current_status: item.status // Map database 'status' to interface 'current_status'
+      }));
+      
+      setTrackingData(mappedData);
     } catch (error) {
       console.error('Error fetching tracking data:', error);
       toast({
@@ -73,7 +80,7 @@ export const useDeliveryTracking = () => {
       const { error } = await supabase
         .from('delivery_tracking')
         .update({
-          current_status: status,
+          status: status, // Map interface 'current_status' to database 'status'
           current_location: location,
           updated_at: new Date().toISOString()
         })

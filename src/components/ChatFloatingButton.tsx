@@ -37,13 +37,13 @@ const ChatFloatingButton = () => {
       // This is a simplified version - you might want to create a hook for this
       const { data: userData } = await supabase
         .from('profiles')
-        .select('full_name, avatar_url')
+        .select('name, avatar_url')
         .eq('id', conv.partnerId)
         .single();
 
       return {
         id: conv.partnerId,
-        name: userData?.full_name || 'Unknown User',
+        name: userData?.name || 'Unknown User',
         avatar: userData?.avatar_url,
         lastMessage: conv.lastMessage,
         unreadCount: conv.unreadCount

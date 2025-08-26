@@ -58,7 +58,8 @@ export const usePushNotifications = () => {
           .from('notification_subscriptions')
           .upsert({
             user_id: user.id,
-            subscription_data: subscription,
+            endpoint: subscription.endpoint,
+            keys: subscription.toJSON() as any,
             is_active: true
           });
       }
