@@ -1,65 +1,19 @@
 import { useState, useEffect } from 'react';
-import { Bell, X } from 'lucide-react';
+import { Bell, X, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { useNotifications } from '@/hooks/useNotifications';
 
 interface NotificationCenterProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  type: 'bid' | 'message' | 'order' | 'delivery';
-  isRead: boolean;
-  createdAt: Date;
-}
-
 const NotificationCenter = ({ isOpen, onClose }: NotificationCenterProps) => {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
   const { subscribeToPush, isSupported } = usePushNotifications();
-
-  useEffect(() => {
-    // Mock notifications for demo
-    setNotifications([
-      {
-        id: '1',
-        title: 'নতুন বিড',
-        message: 'আপনার আলু পণ্যের উপর একটি নতুন বিড এসেছে',
-        type: 'bid',
-        isRead: false,
-        createdAt: new Date(Date.now() - 1000 * 60 * 30) // 30 minutes ago
-      },
-      {
-        id: '2',
-        title: 'নতুন মেসেজ',
-        message: 'রহিম সাহেব আপনাকে একটি মেসেজ পাঠিয়েছেন',
-        type: 'message',
-        isRead: false,
-        createdAt: new Date(Date.now() - 1000 * 60 * 60) // 1 hour ago
-      },
-      {
-        id: '3',
-        title: 'অর্ডার আপডেট',
-        message: 'আপনার অর্ডার #1234 পথে রয়েছে',
-        type: 'delivery',
-        isRead: true,
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2) // 2 hours ago
-      }
-    ]);
-  }, []);
-
-  const markAsRead = (id: string) => {
-    setNotifications(prev => 
-      prev.map(notif => 
-        notif.id === id ? { ...notif, isRead: true } : notif
-      )
-    );
-  };
+  const { notifications, unreadCount, markAsRead, markAllAsRead, isLoading } = useNotifications();
 
   const getTypeColor = (type: string) => {
     switch (type) {
@@ -90,12 +44,23 @@ const NotificationCenter = ({ isOpen, onClose }: NotificationCenterProps) => {
         <div className="flex items-center gap-2">
           <Bell className="h-5 w-5" />
           <h3 className="font-semibold">নোটিফিকেশন</h3>
-          {notifications.filter(n => !n.isRead).length > 0 && (
+          {unreadCount > 0 && (
             <Badge variant="destructive" className="text-xs">
-              {notifications.filter(n => !n.isRead).length}
+              {unreadCount}
             </Badge>
           )}
         </div>
+        {unreadCount > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={markAllAsRead}
+            className="text-xs"
+          >
+            <Check className="h-3 w-3 mr-1" />
+            সব পড়া
+          </Button>
+        )}
         <Button variant="ghost" size="sm" onClick={onClose}>
           <X className="h-4 w-4" />
         </Button>
@@ -103,7 +68,11 @@ const NotificationCenter = ({ isOpen, onClose }: NotificationCenterProps) => {
 
       {/* Notifications */}
       <div className="flex-1 overflow-y-auto">
-        {notifications.length === 0 ? (
+        {isLoading ? (
+          <div className="p-4 text-center text-muted-foreground">
+            লোড হচ্ছে...
+          </div>
+        ) : notifications.length === 0 ? (
           <div className="p-4 text-center text-muted-foreground">
             কোন নোটিফিকেশন নেই
           </div>
@@ -113,7 +82,7 @@ const NotificationCenter = ({ isOpen, onClose }: NotificationCenterProps) => {
               <div
                 key={notification.id}
                 className={`p-3 rounded-lg cursor-pointer transition-colors hover:bg-muted ${
-                  !notification.isRead ? 'bg-primary/5 border-l-4 border-l-primary' : ''
+                  !notification.is_read ? 'bg-primary/5 border-l-4 border-l-primary' : ''
                 }`}
                 onClick={() => markAsRead(notification.id)}
               >
@@ -127,13 +96,13 @@ const NotificationCenter = ({ isOpen, onClose }: NotificationCenterProps) => {
                     </div>
                     <p className="text-sm text-muted-foreground">{notification.message}</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {notification.createdAt.toLocaleDateString('bn-BD', {
+                      {new Date(notification.created_at).toLocaleDateString('bn-BD', {
                         hour: '2-digit',
                         minute: '2-digit'
                       })}
                     </p>
                   </div>
-                  {!notification.isRead && (
+                  {!notification.is_read && (
                     <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0 mt-1"></div>
                   )}
                 </div>

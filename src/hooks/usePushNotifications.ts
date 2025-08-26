@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const usePushNotifications = () => {
   const [isSupported, setIsSupported] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
     setIsSupported('serviceWorker' in navigator && 'PushManager' in window);
@@ -46,13 +49,21 @@ export const usePushNotifications = () => {
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: process.env.VAPID_PUBLIC_KEY // You'll need to add this
+        applicationServerKey: 'your-vapid-public-key' // You'll need to configure this
       });
 
+      // Save subscription to database
+      if (user) {
+        await supabase
+          .from('notification_subscriptions')
+          .upsert({
+            user_id: user.id,
+            subscription_data: subscription,
+            is_active: true
+          });
+      }
+
       setIsSubscribed(true);
-      
-      // Here you would send the subscription to your backend
-      console.log('Push subscription:', subscription);
       
       toast({
         title: "সফল!",

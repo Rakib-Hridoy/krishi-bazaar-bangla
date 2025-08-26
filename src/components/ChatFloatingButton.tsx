@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MessageCircle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMessages } from '@/hooks/useMessages';
+import { supabase } from '@/integrations/supabase/client';
 import ChatWindow from '@/components/ChatWindow';
 
 interface ChatContact {
@@ -17,25 +19,40 @@ interface ChatContact {
 const ChatFloatingButton = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedChat, setSelectedChat] = useState<ChatContact | null>(null);
+  const [contacts, setContacts] = useState<ChatContact[]>([]);
   const { user } = useAuth();
+  const { fetchAllConversations } = useMessages();
 
-  // Mock contacts - in real app, fetch from your contacts/recent chats
-  const contacts: ChatContact[] = [
-    {
-      id: '1',
-      name: 'রহিম কৃষক',
-      avatar: '',
-      lastMessage: 'আলুর দাম কত?',
-      unreadCount: 2
-    },
-    {
-      id: '2', 
-      name: 'করিম ব্যবসায়ী',
-      avatar: '',
-      lastMessage: 'অর্ডার কবে দেবেন?',
-      unreadCount: 0
+  useEffect(() => {
+    if (user && isOpen) {
+      loadContacts();
     }
-  ];
+  }, [user, isOpen]);
+
+  const loadContacts = async () => {
+    const conversations = await fetchAllConversations();
+    
+    // Fetch partner details for each conversation
+    const contactsPromises = conversations.map(async (conv) => {
+      // This is a simplified version - you might want to create a hook for this
+      const { data: userData } = await supabase
+        .from('profiles')
+        .select('full_name, avatar_url')
+        .eq('id', conv.partnerId)
+        .single();
+
+      return {
+        id: conv.partnerId,
+        name: userData?.full_name || 'Unknown User',
+        avatar: userData?.avatar_url,
+        lastMessage: conv.lastMessage,
+        unreadCount: conv.unreadCount
+      };
+    });
+
+    const resolvedContacts = await Promise.all(contactsPromises);
+    setContacts(resolvedContacts);
+  };
 
   if (!user) return null;
 
@@ -59,6 +76,11 @@ const ChatFloatingButton = () => {
         size="sm"
       >
         <MessageCircle className="h-6 w-6" />
+        {contacts.reduce((total, contact) => total + (contact.unreadCount || 0), 0) > 0 && (
+          <span className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground text-xs rounded-full h-6 w-6 flex items-center justify-center">
+            {contacts.reduce((total, contact) => total + (contact.unreadCount || 0), 0)}
+          </span>
+        )}
       </Button>
 
       {/* Contacts List */}

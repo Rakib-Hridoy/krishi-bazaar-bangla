@@ -28,8 +28,7 @@ export const useMessages = () => {
       const { data, error } = await supabase
         .from('messages')
         .select('*')
-        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
-        .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
+        .or(`and(sender_id.eq.${user.id},receiver_id.eq.${userId}),and(sender_id.eq.${userId},receiver_id.eq.${user.id})`)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
@@ -43,6 +42,45 @@ export const useMessages = () => {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchAllConversations = async () => {
+    if (!user) return [];
+    
+    try {
+      const { data, error } = await supabase
+        .from('messages')
+        .select('sender_id, receiver_id, content, created_at, is_read')
+        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Group messages by conversation partner
+      const conversations = new Map();
+      data?.forEach(message => {
+        const partnerId = message.sender_id === user.id ? message.receiver_id : message.sender_id;
+        if (!conversations.has(partnerId)) {
+          conversations.set(partnerId, {
+            partnerId,
+            lastMessage: message.content,
+            lastMessageTime: message.created_at,
+            unreadCount: 0
+          });
+        }
+        
+        // Count unread messages received by current user
+        if (message.receiver_id === user.id && !message.is_read) {
+          const conv = conversations.get(partnerId);
+          conv.unreadCount += 1;
+        }
+      });
+
+      return Array.from(conversations.values());
+    } catch (error) {
+      console.error('Error fetching conversations:', error);
+      return [];
     }
   };
 
@@ -135,6 +173,7 @@ export const useMessages = () => {
     messages,
     isLoading,
     fetchMessages,
+    fetchAllConversations,
     sendMessage,
     markAsRead
   };
