@@ -19,53 +19,94 @@ export function useUserProfile(userId?: string) {
       try {
         setIsLoading(true);
         
-        // Fetch basic profile data
-        const { data, error } = await supabase
-          .from('profiles')
-          .select(`
-            id, 
-            name, 
-            email, 
-            role, 
-            phone, 
-            address, 
-            avatar_url
-          `)
-          .eq('id', userId)
-          .single();
-
-        if (error) {
-          throw error;
-        }
+        const { data: currentUser } = await supabase.auth.getUser();
         
-        // Fetch review data separately
-        const { data: reviewData, error: reviewError } = await supabase
-          .from('reviews')
-          .select('rating')
-          .eq('to_user_id', userId);
+        // If viewing own profile, get complete data
+        if (currentUser?.user?.id === userId) {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select(`
+              id, 
+              name, 
+              email, 
+              role, 
+              phone, 
+              address, 
+              avatar_url
+            `)
+            .eq('id', userId)
+            .single();
+
+          if (error) {
+            throw error;
+          }
           
-        if (reviewError) {
-          console.error('Error fetching reviews:', reviewError);
-        }
-        
-        // Calculate average rating and review count
-        const reviewCount = reviewData?.length || 0;
-        const avgRating = reviewData?.length 
-          ? reviewData.reduce((sum, review) => sum + (review.rating || 0), 0) / reviewData.length 
-          : 0;
+          // Fetch review data for own profile
+          const { data: reviewData, error: reviewError } = await supabase
+            .from('reviews')
+            .select('rating')
+            .eq('to_user_id', userId);
+            
+          if (reviewError) {
+            console.error('Error fetching reviews:', reviewError);
+          }
+          
+          // Calculate average rating and review count
+          const reviewCount = reviewData?.length || 0;
+          const avgRating = reviewData?.length 
+            ? reviewData.reduce((sum, review) => sum + (review.rating || 0), 0) / reviewData.length 
+            : 0;
 
-        if (data) {
-          setProfile({
-            id: data.id,
-            name: data.name,
-            email: data.email,
-            role: data.role as 'buyer' | 'seller' | 'admin',
-            phone: data.phone || undefined,
-            address: data.address || undefined,
-            avatar: data.avatar_url || undefined,
-            rating: avgRating,
-            reviewCount: reviewCount
-          });
+          if (data) {
+            setProfile({
+              id: data.id,
+              name: data.name,
+              email: data.email,
+              role: data.role as 'buyer' | 'seller' | 'admin',
+              phone: data.phone || undefined,
+              address: data.address || undefined,
+              avatar: data.avatar_url || undefined,
+              rating: avgRating,
+              reviewCount: reviewCount
+            });
+          }
+        } else {
+          // For other users, get only public information
+          const { data, error } = await (supabase as any)
+            .rpc('get_public_profile', { profile_user_id: userId });
+            
+          if (error) throw error;
+          
+          // Fetch review data for public profiles
+          const { data: reviewData, error: reviewError } = await supabase
+            .from('reviews')
+            .select('rating')
+            .eq('to_user_id', userId);
+            
+          if (reviewError) {
+            console.error('Error fetching reviews:', reviewError);
+          }
+          
+          // Calculate average rating and review count
+          const reviewCount = reviewData?.length || 0;
+          const avgRating = reviewData?.length 
+            ? reviewData.reduce((sum, review) => sum + (review.rating || 0), 0) / reviewData.length 
+            : 0;
+
+          if (data && data.length > 0) {
+            const profile = data[0];
+            setProfile({
+              id: profile.id,
+              name: profile.name,
+              email: '', // Not exposed for other users
+              role: profile.role as 'buyer' | 'seller' | 'admin',
+              phone: undefined, // Not exposed for other users
+              address: undefined, // Not exposed for other users
+              avatar: profile.avatar_url || undefined,
+              rating: avgRating,
+              reviewCount: reviewCount
+            });
+          }
         }
       } catch (err: any) {
         console.error('Error fetching user profile:', err);
