@@ -88,7 +88,7 @@ export const useMessages = () => {
     if (!user) return;
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('messages')
         .insert({
           sender_id: user.id,
@@ -96,11 +96,17 @@ export const useMessages = () => {
           content,
           product_id: productId,
           message_type: 'text'
-        });
+        })
+        .select('*')
+        .single();
 
       if (error) throw error;
+
+      // Optimistically update local state with the inserted row
+      if (data) {
+        setMessages(prev => [...prev, data as Message]);
+      }
       
-      // The message will be added automatically via realtime subscription
       toast({
         title: "সফল",
         description: "মেসেজ পাঠানো হয়েছে।"
@@ -139,12 +145,13 @@ export const useMessages = () => {
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'messages',
-          filter: `or(sender_id.eq.${user.id},receiver_id.eq.${user.id})`
+          table: 'messages'
         },
         (payload) => {
           const newMessage = payload.new as Message;
-          setMessages(prev => [...prev, newMessage]);
+          if (newMessage.sender_id === user.id || newMessage.receiver_id === user.id) {
+            setMessages(prev => [...prev, newMessage]);
+          }
         }
       )
       .on(
@@ -152,14 +159,15 @@ export const useMessages = () => {
         {
           event: 'UPDATE',
           schema: 'public',
-          table: 'messages',
-          filter: `or(sender_id.eq.${user.id},receiver_id.eq.${user.id})`
+          table: 'messages'
         },
         (payload) => {
           const updatedMessage = payload.new as Message;
-          setMessages(prev => 
-            prev.map(msg => msg.id === updatedMessage.id ? updatedMessage : msg)
-          );
+          if (updatedMessage.sender_id === user.id || updatedMessage.receiver_id === user.id) {
+            setMessages(prev => 
+              prev.map(msg => msg.id === updatedMessage.id ? updatedMessage : msg)
+            );
+          }
         }
       )
       .subscribe();
