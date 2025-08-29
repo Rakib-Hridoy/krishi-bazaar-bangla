@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MessageCircle, X } from 'lucide-react';
+import { MessageCircle, X, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMessages } from '@/hooks/useMessages';
 import { supabase } from '@/integrations/supabase/client';
 import ChatWindow from '@/components/ChatWindow';
+import StartNewChatDialog from '@/components/StartNewChatDialog';
 
 interface ChatContact {
   id: string;
@@ -20,6 +21,7 @@ const ChatFloatingButton = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedChat, setSelectedChat] = useState<ChatContact | null>(null);
   const [contacts, setContacts] = useState<ChatContact[]>([]);
+  const [showNewChatDialog, setShowNewChatDialog] = useState(false);
   const { user } = useAuth();
   const { fetchAllConversations } = useMessages();
 
@@ -98,10 +100,37 @@ const ChatFloatingButton = () => {
           <div className="flex-1 overflow-y-auto">
             {contacts.length === 0 ? (
               <div className="p-4 text-center text-muted-foreground">
-                কোন চ্যাট নেই
+                <p className="mb-3">কোন চ্যাট নেই</p>
+                <Button
+                  onClick={() => {
+                    setShowNewChatDialog(true);
+                    setIsOpen(false);
+                  }}
+                  size="sm"
+                  className="w-full"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  নতুন চ্যাট শুরু করুন
+                </Button>
               </div>
             ) : (
               <div className="space-y-1 p-2">
+                {/* New Chat Button */}
+                <div className="p-2 border-b">
+                  <Button
+                    onClick={() => {
+                      setShowNewChatDialog(true);
+                      setIsOpen(false);
+                    }}
+                    size="sm"
+                    variant="outline"
+                    className="w-full"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    নতুন চ্যাট
+                  </Button>
+                </div>
+
                 {contacts.map((contact) => (
                   <div
                     key={contact.id}
@@ -138,6 +167,12 @@ const ChatFloatingButton = () => {
           </div>
         </Card>
       )}
+
+      {/* New Chat Dialog */}
+      <StartNewChatDialog
+        isOpen={showNewChatDialog}
+        onClose={() => setShowNewChatDialog(false)}
+      />
     </>
   );
 };

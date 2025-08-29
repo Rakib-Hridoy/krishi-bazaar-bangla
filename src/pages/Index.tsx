@@ -8,6 +8,7 @@ import CategoryButton from '@/components/CategoryButton';
 import ProductCard from '@/components/ProductCard';
 import { Link } from 'react-router-dom';
 import { useProducts } from '@/hooks/useProducts';
+import ChatFloatingButton from '@/components/ChatFloatingButton';
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -205,6 +206,9 @@ const Index = () => {
       <div className="mt-auto">
         <Footer />
       </div>
+      
+      {/* Chat Floating Button */}
+      <ChatFloatingButton />
     </div>
   );
 };
