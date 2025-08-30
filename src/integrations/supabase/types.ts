@@ -500,9 +500,48 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      delivery_partners_public: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          is_active: boolean | null
+          name: string | null
+          rating: number | null
+          updated_at: string | null
+          vehicle_type: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          rating?: number | null
+          updated_at?: string | null
+          vehicle_type?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          rating?: number | null
+          updated_at?: string | null
+          vehicle_type?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      get_delivery_partner_public_info: {
+        Args: { partner_id: string }
+        Returns: {
+          id: string
+          is_active: boolean
+          name: string
+          rating: number
+          vehicle_type: string
+        }[]
+      }
       get_public_profile: {
         Args: { profile_user_id: string }
         Returns: {
