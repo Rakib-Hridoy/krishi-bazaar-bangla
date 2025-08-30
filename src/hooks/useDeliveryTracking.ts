@@ -15,8 +15,8 @@ export interface DeliveryTrackingData {
   updated_at: string;
   delivery_partner?: {
     name: string;
+    phone: string;
     vehicle_type: string;
-    rating?: number;
   };
   pickup_point?: {
     name: string;
@@ -40,7 +40,7 @@ export const useDeliveryTracking = () => {
         .from('delivery_tracking')
         .select(`
           *,
-          delivery_partner:delivery_partners_public(name, vehicle_type, rating),
+          delivery_partner:delivery_partners(name, phone, vehicle_type),
           pickup_point:pickup_points(name, address, phone)
         `);
 
