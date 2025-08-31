@@ -532,26 +532,7 @@ export type Database = {
       }
     }
     Functions: {
-      get_delivery_partner_public_info: {
-        Args: { partner_id: string }
-        Returns: {
-          id: string
-          is_active: boolean
-          name: string
-          rating: number
-          vehicle_type: string
-        }[]
-      }
-      get_public_profile: {
-        Args: { profile_user_id: string }
-        Returns: {
-          avatar_url: string
-          created_at: string
-          id: string
-          name: string
-          role: string
-        }[]
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
