@@ -71,14 +71,21 @@ export function useUserProfile(userId?: string) {
             });
           }
         } else {
-          // For other users, get only public information
+          // For other users, get only basic public information
+          // Filter sensitive data by only selecting public columns
           const { data, error } = await supabase
             .from('profiles')
             .select('id, name, role, avatar_url')
             .eq('id', userId)
             .single();
             
-          if (error) throw error;
+          if (error) {
+            if (error.code === 'PGRST116') {
+              // No user found
+              throw new Error('User not found');
+            }
+            throw error;
+          }
           
           // Fetch review data for public profiles
           const { data: reviewData, error: reviewError } = await supabase
