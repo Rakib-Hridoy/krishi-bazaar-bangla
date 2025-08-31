@@ -72,8 +72,11 @@ export function useUserProfile(userId?: string) {
           }
         } else {
           // For other users, get only public information
-          const { data, error } = await (supabase as any)
-            .rpc('get_public_profile', { profile_user_id: userId });
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('id, name, role, avatar_url')
+            .eq('id', userId)
+            .single();
             
           if (error) throw error;
           
@@ -93,16 +96,15 @@ export function useUserProfile(userId?: string) {
             ? reviewData.reduce((sum, review) => sum + (review.rating || 0), 0) / reviewData.length 
             : 0;
 
-          if (data && data.length > 0) {
-            const profile = data[0];
+          if (data) {
             setProfile({
-              id: profile.id,
-              name: profile.name,
+              id: data.id,
+              name: data.name,
               email: '', // Not exposed for other users
-              role: profile.role as 'buyer' | 'seller' | 'admin',
+              role: data.role as 'buyer' | 'seller' | 'admin',
               phone: undefined, // Not exposed for other users
               address: undefined, // Not exposed for other users
-              avatar: profile.avatar_url || undefined,
+              avatar: data.avatar_url || undefined,
               rating: avgRating,
               reviewCount: reviewCount
             });

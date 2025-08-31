@@ -5,11 +5,13 @@ import { Badge } from '@/components/ui/badge';
 import { Bell } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import NotificationCenter from '@/components/NotificationCenter';
+import { useNotifications } from '@/hooks/useNotifications';
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const { user, profile, isAuthenticated, logout } = useAuth();
+  const { unreadCount } = useNotifications();
 
   return (
     <nav className="bg-white shadow-sm">
@@ -43,9 +45,11 @@ export default function Navbar() {
                     className="relative"
                   >
                     <Bell className="h-5 w-5" />
-                    <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 text-xs p-0 flex items-center justify-center">
-                      3
-                    </Badge>
+                    {unreadCount > 0 && (
+                      <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 text-xs p-0 flex items-center justify-center">
+                        {unreadCount}
+                      </Badge>
+                    )}
                   </Button>
                   <NotificationCenter 
                     isOpen={showNotifications}
