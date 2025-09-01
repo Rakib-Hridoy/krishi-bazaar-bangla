@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
+import { hasAcceptedBid } from '@/backend/services/bidService';
 
 interface ChatWindowProps {
   receiverId: string;
@@ -28,6 +29,7 @@ const ChatWindow = ({
 }: ChatWindowProps) => {
   const [newMessage, setNewMessage] = useState('');
   const [senderProfiles, setSenderProfiles] = useState<{[key: string]: {name: string, avatar_url?: string}}>({});
+  const [canSendMessage, setCanSendMessage] = useState(true);
   const { messages, sendMessage, fetchMessages, markAsRead } = useMessages();
   const { user, profile } = useAuth();
   const navigate = useNavigate();
@@ -36,7 +38,19 @@ const ChatWindow = ({
   useEffect(() => {
     fetchMessages(receiverId);
     loadSenderProfiles();
+    checkMessagePermission();
   }, [receiverId, fetchMessages]);
+
+  const checkMessagePermission = async () => {
+    if (!user || !productId) {
+      setCanSendMessage(true);
+      return;
+    }
+
+    // Check if current user has accepted bid for this product
+    const hasAccepted = await hasAcceptedBid(user.id, productId);
+    setCanSendMessage(hasAccepted);
+  };
 
   const loadSenderProfiles = async () => {
     if (!messages.length) return;
@@ -75,7 +89,7 @@ const ChatWindow = ({
   }, [messages]);
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || !canSendMessage) return;
     
     await sendMessage(receiverId, newMessage, productId);
     setNewMessage('');
@@ -156,22 +170,28 @@ const ChatWindow = ({
 
       {/* Input */}
       <div className="p-3 border-t">
-        <div className="flex gap-2">
-          <Input
-            placeholder="মেসেজ লিখুন..."
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-            className="flex-1"
-          />
-          <Button 
-            onClick={handleSendMessage}
-            size="sm"
-            disabled={!newMessage.trim()}
-          >
-            <Send className="h-4 w-4" />
-          </Button>
-        </div>
+        {canSendMessage ? (
+          <div className="flex gap-2">
+            <Input
+              placeholder="মেসেজ লিখুন..."
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+              className="flex-1"
+            />
+            <Button 
+              onClick={handleSendMessage}
+              size="sm"
+              disabled={!newMessage.trim()}
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
+        ) : (
+          <div className="text-center text-sm text-muted-foreground p-2">
+            শুধুমাত্র এক্সেপ্টেড বিডধারীরা মেসেজ পাঠাতে পারবেন
+          </div>
+        )}
       </div>
     </Card>
   );

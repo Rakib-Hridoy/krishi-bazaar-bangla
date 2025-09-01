@@ -4,9 +4,10 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MessageCircle } from "lucide-react";
 import { Product } from "@/types";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ChatWindow from "@/components/ChatWindow";
 import { useAuth } from "@/contexts/AuthContext";
+import { hasAcceptedBid } from "@/backend/services/bidService";
 
 interface ProductCardProps {
   product: Product;
@@ -14,7 +15,19 @@ interface ProductCardProps {
 
 export default function ProductCard({ product }: ProductCardProps) {
   const [showChat, setShowChat] = useState(false);
+  const [canMessage, setCanMessage] = useState(false);
   const { user } = useAuth();
+
+  useEffect(() => {
+    const checkBidStatus = async () => {
+      if (user && user.id !== product.sellerId) {
+        const hasAccepted = await hasAcceptedBid(user.id, product.id);
+        setCanMessage(hasAccepted);
+      }
+    };
+    
+    checkBidStatus();
+  }, [user, product.id, product.sellerId]);
 
   const handleMessageClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -57,7 +70,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             </p>
           </div>
           
-          {user && user.id !== product.sellerId && (
+          {user && user.id !== product.sellerId && canMessage && (
             <Button
               onClick={handleMessageClick}
               size="sm"
@@ -66,6 +79,17 @@ export default function ProductCard({ product }: ProductCardProps) {
             >
               <MessageCircle className="h-4 w-4 mr-1" />
               মেসেজ
+            </Button>
+          )}
+          {user && user.id !== product.sellerId && !canMessage && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled
+              className="opacity-50 cursor-not-allowed"
+            >
+              <MessageCircle className="h-4 w-4 mr-1" />
+              বিড এক্সেপ্ট প্রয়োজন
             </Button>
           )}
         </CardFooter>

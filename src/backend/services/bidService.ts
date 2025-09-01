@@ -228,3 +228,25 @@ export async function getSellerReceivedBids(sellerId: string): Promise<Bid[]> {
     return [];
   }
 }
+
+// Check if a buyer has an accepted bid for a specific product
+export async function hasAcceptedBid(buyerId: string, productId: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .from('bids')
+      .select('id')
+      .eq('buyer_id', buyerId)
+      .eq('product_id', productId)
+      .eq('status', 'accepted')
+      .limit(1);
+
+    if (error) {
+      throw error;
+    }
+
+    return data && data.length > 0;
+  } catch (error) {
+    console.error('Error checking accepted bid:', error);
+    return false;
+  }
+}
