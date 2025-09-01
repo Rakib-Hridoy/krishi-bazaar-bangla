@@ -369,6 +369,7 @@ export type Database = {
       }
       products: {
         Row: {
+          bidding_deadline: string
           category: string
           created_at: string | null
           description: string | null
@@ -383,6 +384,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          bidding_deadline?: string
           category: string
           created_at?: string | null
           description?: string | null
@@ -397,6 +399,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          bidding_deadline?: string
           category?: string
           created_at?: string | null
           description?: string | null
@@ -532,7 +535,10 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      cleanup_expired_products: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never

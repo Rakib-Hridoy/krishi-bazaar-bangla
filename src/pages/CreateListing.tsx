@@ -32,6 +32,7 @@ const CreateListing = () => {
   const [location, setLocation] = useState('');
   const [category, setCategory] = useState('');
   const [images, setImages] = useState<string[]>([]);
+  const [biddingDeadline, setBiddingDeadline] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
   
@@ -142,10 +143,21 @@ const CreateListing = () => {
       return;
     }
     
-    if (!title || !description || price === '' || quantity === '' || !location || !category) {
+    if (!title || !description || price === '' || quantity === '' || !location || !category || !biddingDeadline) {
       toast({
         title: "সব ফিল্ড পূরণ করুন",
         description: "অনুগ্রহ করে সব প্রয়োজনীয় ফিল্ড পূরণ করুন।",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Validate bidding deadline is in the future
+    const deadlineDate = new Date(biddingDeadline);
+    if (deadlineDate <= new Date()) {
+      toast({
+        title: "ভুল সময়সীমা",
+        description: "বিডিং এর সময়সীমা ভবিষ্যতের সময় হতে হবে।",
         variant: "destructive",
       });
       return;
@@ -174,6 +186,7 @@ const CreateListing = () => {
           location,
           images,
           category,
+          bidding_deadline: biddingDeadline,
           seller_id: user.id
         })
         .select();
@@ -318,6 +331,17 @@ const CreateListing = () => {
                         placeholder="উদাহরণঃ দিনাজপুর" 
                         value={location}
                         onChange={(e) => setLocation(e.target.value)}
+                        required
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="bidding-deadline">বিডিং এর সময়সীমা</Label>
+                      <Input 
+                        id="bidding-deadline"
+                        type="datetime-local" 
+                        value={biddingDeadline}
+                        onChange={(e) => setBiddingDeadline(e.target.value)}
                         required
                       />
                     </div>

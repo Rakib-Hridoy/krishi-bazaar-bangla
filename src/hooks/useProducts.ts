@@ -27,6 +27,7 @@ export function useProducts(categoryFilter: string = 'all', searchQuery: string 
             images,
             category,
             created_at,
+            bidding_deadline,
             seller_id,
             profiles:seller_id (name)
           `)
@@ -58,7 +59,8 @@ export function useProducts(categoryFilter: string = 'all', searchQuery: string 
           sellerId: item.seller_id,
           sellerName: item.profiles?.name || 'অজানা বিক্রেতা',
           createdAt: item.created_at,
-          category: item.category
+          category: item.category,
+          biddingDeadline: item.bidding_deadline
         }));
 
         setProducts(formattedProducts);
@@ -91,6 +93,7 @@ export function useProducts(categoryFilter: string = 'all', searchQuery: string 
           location: productData.location,
           images: productData.images,
           category: productData.category,
+          bidding_deadline: productData.biddingDeadline,
           seller_id: productData.sellerId
         })
         .select('*');
@@ -152,6 +155,7 @@ export async function getRelatedProducts(productId: string, category: string, li
         images,
         category,
         created_at,
+        bidding_deadline,
         seller_id,
         profiles:seller_id (name)
       `)
@@ -176,7 +180,8 @@ export async function getRelatedProducts(productId: string, category: string, li
       sellerId: item.seller_id,
       sellerName: item.profiles?.name || 'অজানা বিক্রেতা',
       createdAt: item.created_at,
-      category: item.category
+      category: item.category,
+      biddingDeadline: item.bidding_deadline
     }));
   } catch (error) {
     console.error('Error fetching related products:', error);
@@ -199,6 +204,7 @@ export async function getProductById(id: string): Promise<Product | null> {
         images,
         category,
         created_at,
+        bidding_deadline,
         seller_id,
         profiles:seller_id (name, email, phone, address, avatar_url)
       `)
@@ -223,7 +229,8 @@ export async function getProductById(id: string): Promise<Product | null> {
       sellerId: data.seller_id,
       sellerName: data.profiles?.name || 'অজানা বিক্রেতা',
       createdAt: data.created_at,
-      category: data.category
+      category: data.category,
+      biddingDeadline: data.bidding_deadline
     };
   } catch (error) {
     console.error('Error fetching product by ID:', error);
@@ -246,6 +253,7 @@ export async function getProductsByUserId(userId: string): Promise<Product[]> {
         images,
         category,
         created_at,
+        bidding_deadline,
         seller_id,
         profiles:seller_id (name)
       `)
@@ -268,7 +276,8 @@ export async function getProductsByUserId(userId: string): Promise<Product[]> {
       sellerId: item.seller_id,
       sellerName: item.profiles?.name || 'অজানা বিক্রেতা',
       createdAt: item.created_at,
-      category: item.category
+      category: item.category,
+      biddingDeadline: item.bidding_deadline
     }));
   } catch (error) {
     console.error('Error fetching products by user ID:', error);

@@ -12,6 +12,7 @@ export interface Product {
   sellerName: string;
   createdAt: string;
   category: string;
+  biddingDeadline?: string;
 }
 
 export interface Bid {

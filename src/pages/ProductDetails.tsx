@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { MessageCircle } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -28,8 +29,12 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { getProductById, getRelatedProducts } from '@/hooks/useProducts';
 import { useProductBids } from '@/hooks/useBids';
+import { useBidStats } from '@/hooks/useBidStats';
+import { hasAcceptedBid } from '@/backend/services/bidService';
 import { Product } from '@/types';
 import ProductCard from '@/components/ProductCard';
+import BiddingStatus from '@/components/BiddingStatus';
+import ChatWindow from '@/components/ChatWindow';
 
 const ProductDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -43,8 +48,12 @@ const ProductDetails = () => {
   const [bidDialogOpen, setBidDialogOpen] = useState(false);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [loadingRelated, setLoadingRelated] = useState(false);
+  const [showChat, setShowChat] = useState(false);
+  const [canMessage, setCanMessage] = useState(false);
+  const [isBiddingExpired, setIsBiddingExpired] = useState(false);
   
   const { bids, isLoading: loadingBids, addBid, updateBidStatus } = useProductBids(id);
+  const { stats: bidStats, isLoading: loadingStats } = useBidStats(id);
   
   useEffect(() => {
     const fetchProduct = async () => {
@@ -60,6 +69,18 @@ const ProductDetails = () => {
           const related = await getRelatedProducts(id, productData.category);
           setRelatedProducts(related);
           setLoadingRelated(false);
+          
+          // Check bidding expiry and messaging permission
+          if (productData.biddingDeadline) {
+            const deadline = new Date(productData.biddingDeadline);
+            const now = new Date();
+            setIsBiddingExpired(now > deadline);
+          }
+          
+          if (user && user.id !== productData.sellerId) {
+            const hasAccepted = await hasAcceptedBid(user.id, productData.id);
+            setCanMessage(hasAccepted);
+          }
         }
       } catch (error) {
         console.error('Error fetching product:', error);
@@ -74,7 +95,7 @@ const ProductDetails = () => {
     };
     
     fetchProduct();
-  }, [id, toast]);
+  }, [id, toast, user]);
 
   const handleBidSubmit = async () => {
     if (!isAuthenticated) {
@@ -102,6 +123,15 @@ const ProductDetails = () => {
       toast({
         title: "নিজের পণ্যে বিড করা যাবে না",
         description: "আপনি নিজের পণ্যে বিড করতে পারবেন না।",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (isBiddingExpired) {
+      toast({
+        title: "বিডিং সময় শেষ",
+        description: "এই পণ্যের বিডিং সময় শেষ হয়ে গেছে।",
         variant: "destructive"
       });
       return;
@@ -157,6 +187,10 @@ const ProductDetails = () => {
     } catch (error) {
       console.error('Error rejecting bid:', error);
     }
+  };
+
+  const handleMessageClick = () => {
+    setShowChat(true);
   };
   
   if (loadingProduct) {
@@ -220,7 +254,10 @@ const ProductDetails = () => {
             {/* Product Info */}
             <div className="space-y-6">
               <div>
-                <h1 className="text-3xl font-bold">{product.title}</h1>
+                <div className="flex items-center justify-between">
+                  <h1 className="text-3xl font-bold">{product.title}</h1>
+                  <BiddingStatus deadline={product.biddingDeadline} />
+                </div>
                 <p className="text-muted-foreground mt-1">{product.category} • {product.location}</p>
               </div>
               
@@ -234,49 +271,105 @@ const ProductDetails = () => {
                   </p>
                 </div>
                 
-                {isAuthenticated && profile?.role === 'buyer' && user?.id !== product.sellerId && (
-                  <Dialog open={bidDialogOpen} onOpenChange={setBidDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button className="bg-agriculture-amber hover:bg-amber-600">
-                        বিড করুন
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>বিড করুন</DialogTitle>
-                        <DialogDescription>
-                          "{product.title}" পণ্যটির জন্য আপনার দাম প্রস্তাব দিন। বর্তমান দামঃ ৳{product.price}/{product.unit}
-                        </DialogDescription>
-                      </DialogHeader>
-                      
-                      <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                          <label htmlFor="bid-amount" className="text-sm font-medium">বিড এমাউন্ট (৳)</label>
-                          <Input
-                            id="bid-amount"
-                            type="number"
-                            min="1"
-                            placeholder="আপনার দাম প্রস্তাব"
-                            value={bidAmount}
-                            onChange={(e) => setBidAmount(e.target.value)}
-                          />
-                        </div>
+                {/* Average Bid Display */}
+                {!loadingStats && bidStats.totalBids > 0 && (
+                  <div className="bg-blue-50 p-4 rounded-md">
+                    <h3 className="text-sm font-medium text-blue-900 mb-2">বিড পরিসংখ্যান</h3>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-blue-700">গড় বিড</p>
+                        <p className="font-bold text-blue-900">৳{bidStats.averageAmount}</p>
                       </div>
-                      
-                      <DialogFooter>
-                        <Button variant="outline" onClick={() => setBidDialogOpen(false)}>
-                          বাতিল করুন
-                        </Button>
-                        <Button 
-                          className="bg-agriculture-green-dark hover:bg-agriculture-green-light"
-                          onClick={handleBidSubmit}
-                        >
-                          বিড জমা দিন
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
+                      <div>
+                        <p className="text-blue-700">মোট বিড</p>
+                        <p className="font-bold text-blue-900">{bidStats.totalBids}টি</p>
+                      </div>
+                    </div>
+                  </div>
                 )}
+                
+                <div className="flex flex-wrap gap-2">
+                  {isAuthenticated && profile?.role === 'buyer' && user?.id !== product.sellerId && !isBiddingExpired && (
+                    <Dialog open={bidDialogOpen} onOpenChange={setBidDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button className="bg-agriculture-amber hover:bg-amber-600">
+                          বিড করুন
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>বিড করুন</DialogTitle>
+                          <DialogDescription>
+                            "{product.title}" পণ্যটির জন্য আপনার দাম প্রস্তাব দিন। বর্তমান দামঃ ৳{product.price}/{product.unit}
+                            {bidStats.totalBids > 0 && (
+                              <span className="block mt-2 text-blue-600">
+                                গড় বিডঃ ৳{bidStats.averageAmount} ({bidStats.totalBids}টি বিড থেকে)
+                              </span>
+                            )}
+                          </DialogDescription>
+                        </DialogHeader>
+                        
+                        <div className="space-y-4 py-4">
+                          <div className="space-y-2">
+                            <label htmlFor="bid-amount" className="text-sm font-medium">বিড এমাউন্ট (৳)</label>
+                            <Input
+                              id="bid-amount"
+                              type="number"
+                              min="1"
+                              placeholder="আপনার দাম প্রস্তাব"
+                              value={bidAmount}
+                              onChange={(e) => setBidAmount(e.target.value)}
+                            />
+                          </div>
+                        </div>
+                        
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => setBidDialogOpen(false)}>
+                            বাতিল করুন
+                          </Button>
+                          <Button 
+                            className="bg-agriculture-green-dark hover:bg-agriculture-green-light"
+                            onClick={handleBidSubmit}
+                          >
+                            বিড জমা দিন
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  )}
+                  
+                  {isAuthenticated && user?.id !== product.sellerId && canMessage && (
+                    <Button
+                      onClick={handleMessageClick}
+                      variant="outline"
+                      className="hover:bg-primary hover:text-primary-foreground"
+                    >
+                      <MessageCircle className="h-4 w-4 mr-1" />
+                      মেসেজ করুন
+                    </Button>
+                  )}
+                  
+                  {isAuthenticated && user?.id !== product.sellerId && !canMessage && !isBiddingExpired && (
+                    <Button
+                      variant="outline"
+                      disabled
+                      className="opacity-50 cursor-not-allowed"
+                    >
+                      <MessageCircle className="h-4 w-4 mr-1" />
+                      বিড এক্সেপ্ট প্রয়োজন
+                    </Button>
+                  )}
+                  
+                  {isBiddingExpired && (
+                    <Button
+                      variant="secondary"
+                      disabled
+                      className="opacity-60"
+                    >
+                      বিডিং সময় শেষ
+                    </Button>
+                  )}
+                </div>
               </div>
               
               <Separator />
@@ -398,6 +491,15 @@ const ProductDetails = () => {
           </div>
         </div>
       </main>
+      
+      {showChat && user && product && (
+        <ChatWindow
+          receiverId={product.sellerId}
+          receiverName={product.sellerName}
+          productId={product.id}
+          onClose={() => setShowChat(false)}
+        />
+      )}
       
       <Footer />
     </div>

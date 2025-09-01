@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import ChatWindow from "@/components/ChatWindow";
 import { useAuth } from "@/contexts/AuthContext";
 import { hasAcceptedBid } from "@/backend/services/bidService";
+import BiddingStatus from "@/components/BiddingStatus";
 
 interface ProductCardProps {
   product: Product;
@@ -16,6 +17,7 @@ interface ProductCardProps {
 export default function ProductCard({ product }: ProductCardProps) {
   const [showChat, setShowChat] = useState(false);
   const [canMessage, setCanMessage] = useState(false);
+  const [isBiddingExpired, setIsBiddingExpired] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -26,8 +28,15 @@ export default function ProductCard({ product }: ProductCardProps) {
       }
     };
     
+    // Check if bidding has expired
+    if (product.biddingDeadline) {
+      const deadline = new Date(product.biddingDeadline);
+      const now = new Date();
+      setIsBiddingExpired(now > deadline);
+    }
+    
     checkBidStatus();
-  }, [user, product.id, product.sellerId]);
+  }, [user, product.id, product.sellerId, product.biddingDeadline]);
 
   const handleMessageClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -37,7 +46,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   return (
     <>
-      <Card className="h-full overflow-hidden transition-all hover:shadow-lg relative">
+      <Card className={`h-full overflow-hidden transition-all hover:shadow-lg relative ${isBiddingExpired ? 'opacity-60 cursor-not-allowed' : ''}`}>
         <Link to={`/product/${product.id}`}>
           <div className="aspect-square overflow-hidden">
             <img 
@@ -53,9 +62,12 @@ export default function ProductCard({ product }: ProductCardProps) {
               <p className="font-bold text-agriculture-green-dark">
                 ৳{product.price} / {product.unit}
               </p>
+            <div className="flex items-center justify-between">
               <p className="text-sm text-agriculture-amber">
                 পরিমাণ: {product.quantity} {product.unit}
               </p>
+              <BiddingStatus deadline={product.biddingDeadline} />
+            </div>
             </div>
           </CardContent>
         </Link>
