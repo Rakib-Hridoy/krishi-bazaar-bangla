@@ -47,9 +47,14 @@ const ChatWindow = ({
       return;
     }
 
-    // Check if current user has accepted bid for this product
-    const hasAccepted = await hasAcceptedBid(user.id, productId);
-    setCanSendMessage(hasAccepted);
+    try {
+      // Check if current user has accepted bid for this product
+      const hasAccepted = await hasAcceptedBid(user.id, productId);
+      setCanSendMessage(hasAccepted);
+    } catch (error) {
+      console.error('Error checking message permission:', error);
+      setCanSendMessage(false);
+    }
   };
 
   const loadSenderProfiles = async () => {

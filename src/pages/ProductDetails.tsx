@@ -166,10 +166,12 @@ const ProductDetails = () => {
     
     try {
       await updateBidStatus(bidId, 'accepted');
-      toast({
-        title: "বিড গৃহীত",
-        description: "বিড সফলভাবে গৃহীত হয়েছে।"
-      });
+      
+      // Check if user can now message by refreshing the bid check
+      if (user) {
+        const hasAccepted = await hasAcceptedBid(user.id, product.id);
+        setCanMessage(hasAccepted);
+      }
     } catch (error) {
       console.error('Error accepting bid:', error);
     }
@@ -180,10 +182,6 @@ const ProductDetails = () => {
     
     try {
       await updateBidStatus(bidId, 'rejected');
-      toast({
-        title: "বিড প্রত্যাখ্যাত",
-        description: "বিড সফলভাবে প্রত্যাখ্যাত হয়েছে।"
-      });
     } catch (error) {
       console.error('Error rejecting bid:', error);
     }

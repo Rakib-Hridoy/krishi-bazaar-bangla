@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 
 export interface AppNotification {
   id: string;
@@ -18,33 +18,54 @@ export const useNotifications = () => {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuth();
-  const { toast } = useToast();
 
   const fetchNotifications = async () => {
     if (!user) return;
     
     setIsLoading(true);
     try {
-      // Use simple query without RPC until types are regenerated
-      const { data: fallbackData, error: fallbackError } = await supabase
+      // Fetch from notifications table
+      const { data: notificationsData, error: notificationsError } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (!notificationsError && notificationsData) {
+        const formattedNotifications: AppNotification[] = notificationsData.map(notif => ({
+          id: notif.id,
+          user_id: notif.user_id,
+          title: notif.title,
+          message: notif.message,
+          type: notif.type as 'bid' | 'message' | 'order' | 'delivery',
+          is_read: notif.is_read,
+          created_at: notif.created_at,
+          metadata: notif.metadata
+        }));
+        setNotifications(formattedNotifications);
+      }
+
+      // Also fetch messages as fallback
+      const { data: messagesData, error: messagesError } = await supabase
         .from('messages')
         .select('id, sender_id, content, created_at, is_read')
         .eq('receiver_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(20);
+        .limit(10);
 
-      if (!fallbackError && fallbackData) {
-        const formattedNotifications: AppNotification[] = fallbackData.map(msg => ({
-          id: msg.id,
+      if (!messagesError && messagesData) {
+        const messageNotifications: AppNotification[] = messagesData.map(msg => ({
+          id: `msg_${msg.id}`,
           user_id: msg.sender_id,
           title: 'নতুন মেসেজ',
           message: msg.content,
           type: 'message' as const,
           is_read: msg.is_read,
           created_at: msg.created_at,
-          metadata: null
+          metadata: { message_id: msg.id }
         }));
-        setNotifications(formattedNotifications);
+        setNotifications(prev => [...prev, ...messageNotifications]);
       }
     } catch (error) {
       console.error('Error fetching notifications:', error);
@@ -60,18 +81,35 @@ export const useNotifications = () => {
 
   const markAsRead = async (notificationId: string) => {
     try {
-      // Try to update notifications table first
-      const { error: notifError } = await supabase
-        .from('messages')
-        .update({ is_read: true })
-        .eq('id', notificationId);
+      // Check if it's a message notification
+      if (notificationId.startsWith('msg_')) {
+        const messageId = notificationId.replace('msg_', '');
+        const { error: msgError } = await supabase
+          .from('messages')
+          .update({ is_read: true })
+          .eq('id', messageId);
 
-      if (!notifError) {
-        setNotifications(prev => 
-          prev.map(notif => 
-            notif.id === notificationId ? { ...notif, is_read: true } : notif
-          )
-        );
+        if (!msgError) {
+          setNotifications(prev => 
+            prev.map(notif => 
+              notif.id === notificationId ? { ...notif, is_read: true } : notif
+            )
+          );
+        }
+      } else {
+        // Regular notification
+        const { error: notifError } = await supabase
+          .from('notifications')
+          .update({ is_read: true })
+          .eq('id', notificationId);
+
+        if (!notifError) {
+          setNotifications(prev => 
+            prev.map(notif => 
+              notif.id === notificationId ? { ...notif, is_read: true } : notif
+            )
+          );
+        }
       }
     } catch (error) {
       console.error('Error marking notification as read:', error);
@@ -82,17 +120,23 @@ export const useNotifications = () => {
     if (!user) return;
 
     try {
-      const { error } = await supabase
+      // Mark all notifications as read
+      await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('user_id', user.id)
+        .eq('is_read', false);
+
+      // Mark all messages as read
+      await supabase
         .from('messages')
         .update({ is_read: true })
         .eq('receiver_id', user.id)
         .eq('is_read', false);
 
-      if (!error) {
-        setNotifications(prev => 
-          prev.map(notif => ({ ...notif, is_read: true }))
-        );
-      }
+      setNotifications(prev => 
+        prev.map(notif => ({ ...notif, is_read: true }))
+      );
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
     }
@@ -109,14 +153,52 @@ export const useNotifications = () => {
     console.log('Creating notification:', { userId, title, message, type, metadata });
   };
 
-  // Set up realtime subscription for messages (temporary until notifications table is available)
+  // Set up realtime subscriptions
   useEffect(() => {
     if (!user) return;
 
     fetchNotifications();
 
-    const channel = supabase
-      .channel('message_notifications')
+    // Subscribe to notifications
+    const notificationsChannel = supabase
+      .channel('notifications_channel')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          const newNotification = payload.new as any;
+          const formattedNotification: AppNotification = {
+            id: newNotification.id,
+            user_id: newNotification.user_id,
+            title: newNotification.title,
+            message: newNotification.message,
+            type: newNotification.type,
+            is_read: false,
+            created_at: newNotification.created_at,
+            metadata: newNotification.metadata
+          };
+          
+          setNotifications(prev => [formattedNotification, ...prev]);
+          
+          // Show browser notification if permission granted
+          if (Notification.permission === 'granted') {
+            new Notification(formattedNotification.title, {
+              body: formattedNotification.message,
+              icon: '/icon-192.png'
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    // Subscribe to messages
+    const messagesChannel = supabase
+      .channel('messages_channel')
       .on(
         'postgres_changes',
         {
@@ -127,23 +209,23 @@ export const useNotifications = () => {
         },
         (payload) => {
           const newMessage = payload.new as any;
-          const newNotification: AppNotification = {
-            id: newMessage.id,
+          const messageNotification: AppNotification = {
+            id: `msg_${newMessage.id}`,
             user_id: newMessage.sender_id,
             title: 'নতুন মেসেজ',
             message: newMessage.content,
             type: 'message',
             is_read: false,
             created_at: newMessage.created_at,
-            metadata: null
+            metadata: { message_id: newMessage.id }
           };
           
-          setNotifications(prev => [newNotification, ...prev]);
+          setNotifications(prev => [messageNotification, ...prev]);
           
           // Show browser notification if permission granted
           if (Notification.permission === 'granted') {
-            new Notification(newNotification.title, {
-              body: newNotification.message,
+            new Notification(messageNotification.title, {
+              body: messageNotification.message,
               icon: '/icon-192.png'
             });
           }
@@ -152,7 +234,8 @@ export const useNotifications = () => {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(notificationsChannel);
+      supabase.removeChannel(messagesChannel);
     };
   }, [user]);
 

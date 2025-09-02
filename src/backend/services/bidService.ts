@@ -1,5 +1,5 @@
 
-import { supabase } from '../supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { Bid } from '@/types';
 
 // Get bids for a specific product
