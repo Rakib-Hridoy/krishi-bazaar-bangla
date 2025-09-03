@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Send, X, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,7 +37,6 @@ const ChatWindow = ({
 
   useEffect(() => {
     fetchMessages(receiverId);
-    loadSenderProfiles();
     checkMessagePermission();
   }, [receiverId, fetchMessages]);
 
@@ -57,13 +56,17 @@ const ChatWindow = ({
     }
   };
 
-  const loadSenderProfiles = async () => {
+  const loadSenderProfiles = useCallback(async () => {
     if (!messages.length) return;
     
     const senderIds = [...new Set(messages.map(msg => msg.sender_id))];
-    const profilePromises = senderIds.map(async (senderId) => {
-      if (senderId === user?.id || senderProfiles[senderId]) return null;
-      
+    const newSenderIds = senderIds.filter(senderId => 
+      senderId !== user?.id && !senderProfiles[senderId]
+    );
+    
+    if (newSenderIds.length === 0) return;
+    
+    const profilePromises = newSenderIds.map(async (senderId) => {
       const { data } = await supabase
         .from('profiles')
         .select('name, avatar_url')
@@ -83,11 +86,11 @@ const ChatWindow = ({
     });
 
     setSenderProfiles(prev => ({ ...prev, ...newProfiles }));
-  };
+  }, [messages, user?.id, senderProfiles]);
 
   useEffect(() => {
     loadSenderProfiles();
-  }, [messages]);
+  }, [loadSenderProfiles]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -100,10 +103,12 @@ const ChatWindow = ({
     setNewMessage('');
   };
 
-  const filteredMessages = messages.filter(
-    msg => 
-      (msg.sender_id === user?.id && msg.receiver_id === receiverId) ||
-      (msg.sender_id === receiverId && msg.receiver_id === user?.id)
+  const filteredMessages = useMemo(() => 
+    messages.filter(
+      msg => 
+        (msg.sender_id === user?.id && msg.receiver_id === receiverId) ||
+        (msg.sender_id === receiverId && msg.receiver_id === user?.id)
+    ), [messages, user?.id, receiverId]
   );
 
   return (
