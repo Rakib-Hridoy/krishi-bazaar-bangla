@@ -9,6 +9,7 @@ import ChatWindow from "@/components/ChatWindow";
 import { useAuth } from "@/contexts/AuthContext";
 import { hasAcceptedBid } from "@/backend/services/bidService";
 import BiddingStatus from "@/components/BiddingStatus";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ProductCardProps {
   product: Product;
@@ -37,6 +38,29 @@ export default function ProductCard({ product }: ProductCardProps) {
     
     checkBidStatus();
   }, [user, product.id, product.sellerId, product.biddingDeadline]);
+
+  // Realtime: enable messaging immediately when seller accepts this buyer's bid
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`bids-status-${product.id}-${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'bids', filter: `product_id=eq.${product.id}` },
+        (payload) => {
+          const newRow = payload.new as { buyer_id: string; status: string };
+          if (newRow && newRow.buyer_id === user.id && newRow.status === 'accepted') {
+            setCanMessage(true);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, product.id]);
 
   const handleMessageClick = (e: React.MouseEvent) => {
     e.preventDefault();

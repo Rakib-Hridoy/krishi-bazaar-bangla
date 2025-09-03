@@ -35,6 +35,7 @@ import { Product } from '@/types';
 import ProductCard from '@/components/ProductCard';
 import BiddingStatus from '@/components/BiddingStatus';
 import ChatWindow from '@/components/ChatWindow';
+import { supabase } from '@/integrations/supabase/client';
 
 const ProductDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -96,6 +97,29 @@ const ProductDetails = () => {
     
     fetchProduct();
   }, [id, toast, user]);
+
+  // Realtime: when this buyer's bid gets accepted, enable messaging instantly
+  useEffect(() => {
+    if (!user || !id) return;
+
+    const channel = supabase
+      .channel(`pd-bids-status-${id}-${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'bids', filter: `product_id=eq.${id}` },
+        (payload) => {
+          const newRow = payload.new as { buyer_id: string; status: string };
+          if (newRow && newRow.buyer_id === user.id && newRow.status === 'accepted') {
+            setCanMessage(true);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, id]);
 
   const handleBidSubmit = async () => {
     if (!isAuthenticated) {
