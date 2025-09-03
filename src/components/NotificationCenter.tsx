@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useNavigate } from 'react-router-dom';
 
 interface NotificationCenterProps {
   isOpen: boolean;
@@ -14,6 +15,7 @@ interface NotificationCenterProps {
 const NotificationCenter = ({ isOpen, onClose }: NotificationCenterProps) => {
   const { subscribeToPush, isSupported } = usePushNotifications();
   const { notifications, unreadCount, markAsRead, markAllAsRead, isLoading } = useNotifications();
+  const navigate = useNavigate();
 
   const getTypeColor = (type: string) => {
     switch (type) {
@@ -32,6 +34,16 @@ const NotificationCenter = ({ isOpen, onClose }: NotificationCenterProps) => {
       case 'order': return 'অর্ডার';
       case 'delivery': return 'ডেলিভারি';
       default: return type;
+    }
+  };
+
+  const handleNotificationClick = (notification: any) => {
+    markAsRead(notification.id);
+    
+    // Navigate to product if notification has product_id in metadata
+    if (notification.metadata?.product_id) {
+      navigate(`/product/${notification.metadata.product_id}`);
+      onClose(); // Close the notification center
     }
   };
 
@@ -84,7 +96,7 @@ const NotificationCenter = ({ isOpen, onClose }: NotificationCenterProps) => {
                 className={`p-3 rounded-lg cursor-pointer transition-colors hover:bg-muted ${
                   !notification.is_read ? 'bg-primary/5 border-l-4 border-l-primary' : ''
                 }`}
-                onClick={() => markAsRead(notification.id)}
+                onClick={() => handleNotificationClick(notification)}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1">
