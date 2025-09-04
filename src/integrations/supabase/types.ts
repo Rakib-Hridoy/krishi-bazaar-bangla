@@ -54,7 +54,7 @@ export type Database = {
             foreignKeyName: "bids_buyer_id_fkey"
             columns: ["buyer_id"]
             isOneToOne: false
-            referencedRelation: "public_profiles"
+            referencedRelation: "safe_public_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -432,7 +432,7 @@ export type Database = {
             foreignKeyName: "products_seller_id_fkey"
             columns: ["seller_id"]
             isOneToOne: false
-            referencedRelation: "public_profiles"
+            referencedRelation: "safe_public_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -510,7 +510,7 @@ export type Database = {
             foreignKeyName: "reviews_from_user_id_fkey"
             columns: ["from_user_id"]
             isOneToOne: false
-            referencedRelation: "public_profiles"
+            referencedRelation: "safe_public_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -524,7 +524,7 @@ export type Database = {
             foreignKeyName: "reviews_to_user_id_fkey"
             columns: ["to_user_id"]
             isOneToOne: false
-            referencedRelation: "public_profiles"
+            referencedRelation: "safe_public_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -561,7 +561,7 @@ export type Database = {
         }
         Relationships: []
       }
-      public_profiles: {
+      safe_public_profiles: {
         Row: {
           avatar_url: string | null
           created_at: string | null
@@ -587,20 +587,6 @@ export type Database = {
       cleanup_expired_products: {
         Args: Record<PropertyKey, never>
         Returns: number
-      }
-      get_profile_safe: {
-        Args: { profile_id: string }
-        Returns: {
-          address: string
-          avatar_url: string
-          created_at: string
-          email: string
-          id: string
-          name: string
-          phone: string
-          role: string
-          updated_at: string
-        }[]
       }
     }
     Enums: {
