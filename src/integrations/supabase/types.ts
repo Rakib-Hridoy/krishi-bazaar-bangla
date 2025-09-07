@@ -567,21 +567,18 @@ export type Database = {
           created_at: string | null
           id: string | null
           name: string | null
-          role: string | null
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string | null
           id?: string | null
           name?: string | null
-          role?: string | null
         }
         Update: {
           avatar_url?: string | null
           created_at?: string | null
           id?: string | null
           name?: string | null
-          role?: string | null
         }
         Relationships: []
       }

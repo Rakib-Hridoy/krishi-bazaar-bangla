@@ -68,7 +68,7 @@ const ChatWindow = ({
     
     const profilePromises = newSenderIds.map(async (senderId) => {
       const { data } = await supabase
-        .from('safe_public_profiles')
+        .from('profiles')
         .select('name, avatar_url')
         .eq('id', senderId)
         .single();

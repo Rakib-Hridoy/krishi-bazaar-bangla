@@ -55,15 +55,23 @@ const StartNewChatDialog = ({ isOpen, onClose }: StartNewChatDialogProps) => {
       // Get unique seller IDs
       const sellerIds = [...new Set(productsData?.map(p => p.seller_id) || [])];
       
-      // Get profiles for these sellers from safe public view
-      const { data: sellersData, error: sellersError } = await supabase
-        .from('safe_public_profiles')
-        .select('id, name, avatar_url, role')
-        .in('id', sellerIds);
-        
-      if (sellersError) throw sellersError;
+      // Get profiles for these sellers
+      const profilePromises = sellerIds.map(async (sellerId) => {
+        try {
+          const { data: profileData } = await (supabase as any).rpc('get_public_profile', {
+            profile_user_id: sellerId
+          });
+          return profileData;
+        } catch (error) {
+          console.error('Error fetching profile:', error);
+          return null;
+        }
+      });
 
-      setUsers(sellersData || []);
+      const profiles = await Promise.all(profilePromises);
+      const validProfiles = profiles.filter(p => p !== null);
+      
+      setUsers(validProfiles || []);
     } catch (error) {
       console.error('Error loading users:', error);
     } finally {
