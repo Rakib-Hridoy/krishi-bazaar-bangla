@@ -134,7 +134,7 @@ const ChatWindow = ({
             const isCurrentUser = message.sender_id === user?.id;
             const senderProfile = isCurrentUser 
               ? { name: profile?.name || 'আপনি', avatar_url: profile?.avatar_url }
-              : senderProfiles[message.sender_id] || { name: receiverName };
+              : senderProfiles[message.sender_id] || { name: message.sender_id === receiverId ? receiverName : 'ব্যবহারকারী' };
 
             return (
               <div
@@ -154,7 +154,7 @@ const ChatWindow = ({
                         onClick={() => navigate(`/profile/${message.sender_id}`)}
                         className="text-xs font-medium text-primary hover:underline"
                       >
-                        {senderProfile.name || 'Unknown User'}
+                        {senderProfile.name || 'ব্যবহারকারী'}
                       </button>
                     </div>
                   )}
