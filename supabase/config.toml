@@ -1,1 +1,4 @@
 project_id = "rgzsdsqlqvrnjbnxkjjf"
+
+[functions.cleanup-expired-bids]
+verify_jwt = false

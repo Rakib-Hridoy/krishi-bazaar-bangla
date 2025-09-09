@@ -10,6 +10,7 @@ import {
   abandonExpiredBids,
   updateBidStatus 
 } from '@/backend/services/bidService';
+import { AdminBidActions } from '@/components/AdminBidActions';
 import { useToast } from '@/hooks/use-toast';
 import { Bid } from '@/types';
 import { format } from 'date-fns';
@@ -195,6 +196,8 @@ export function AdminBidMonitoring() {
       </div>
 
       {/* Action Buttons */}
+      <AdminBidActions onRefresh={fetchData} />
+      
       {expiredBids.length > 0 && (
         <Card className="border-orange-200 bg-orange-50">
           <CardContent className="p-4">
