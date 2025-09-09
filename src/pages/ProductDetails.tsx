@@ -424,10 +424,9 @@ const ProductDetails = () => {
             </div>
           </div>
           
-          {/* Bids Section (Only visible to the seller) */}
-          {isAuthenticated && user?.id === product.sellerId && (
-            <div className="mt-12">
-              <h2 className="text-2xl font-bold mb-6">বিডসমূহ</h2>
+          {/* Bids Section (Public) */}
+          <div className="mt-12">
+            <h2 className="text-2xl font-bold mb-6">সকল বিড</h2>
               
               {loadingBids ? (
                 <p className="text-center py-4">বিড লোড হচ্ছে...</p>
@@ -451,23 +450,29 @@ const ProductDetails = () => {
                         </div>
                         
                         {bid.status === 'pending' ? (
-                          <div className="flex space-x-2">
-                            <Button 
-                              className="flex-1 bg-agriculture-green-dark hover:bg-agriculture-green-light" 
-                              size="sm"
-                              onClick={() => handleAcceptBid(bid.id)}
-                            >
-                              গ্রহণ করুন
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="flex-1"
-                              onClick={() => handleRejectBid(bid.id)}
-                            >
-                              প্রত্যাখ্যান করুন
-                            </Button>
-                          </div>
+                          isAuthenticated && user?.id === product.sellerId ? (
+                            <div className="flex space-x-2">
+                              <Button 
+                                className="flex-1 bg-agriculture-green-dark hover:bg-agriculture-green-light" 
+                                size="sm"
+                                onClick={() => handleAcceptBid(bid.id)}
+                              >
+                                গ্রহণ করুন
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="flex-1"
+                                onClick={() => handleRejectBid(bid.id)}
+                              >
+                                প্রত্যাখ্যান করুন
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="bg-yellow-100 text-yellow-800 py-2 px-3 rounded text-center">
+                              অপেক্ষমাণ
+                            </div>
+                          )
                         ) : bid.status === 'accepted' ? (
                           <div className="bg-green-100 text-green-800 py-2 px-3 rounded text-center">
                             গৃহীত
@@ -489,7 +494,6 @@ const ProductDetails = () => {
                 </Card>
               )}
             </div>
-          )}
           
           {/* Related Products */}
           <div className="mt-12">
