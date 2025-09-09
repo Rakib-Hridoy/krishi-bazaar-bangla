@@ -137,102 +137,6 @@ export type Database = {
         }
         Relationships: []
       }
-      delivery_partners: {
-        Row: {
-          coverage_areas: string[] | null
-          created_at: string
-          email: string | null
-          id: string
-          is_active: boolean | null
-          license_number: string | null
-          name: string
-          phone: string
-          rating: number | null
-          updated_at: string
-          vehicle_type: string | null
-        }
-        Insert: {
-          coverage_areas?: string[] | null
-          created_at?: string
-          email?: string | null
-          id?: string
-          is_active?: boolean | null
-          license_number?: string | null
-          name: string
-          phone: string
-          rating?: number | null
-          updated_at?: string
-          vehicle_type?: string | null
-        }
-        Update: {
-          coverage_areas?: string[] | null
-          created_at?: string
-          email?: string | null
-          id?: string
-          is_active?: boolean | null
-          license_number?: string | null
-          name?: string
-          phone?: string
-          rating?: number | null
-          updated_at?: string
-          vehicle_type?: string | null
-        }
-        Relationships: []
-      }
-      delivery_tracking: {
-        Row: {
-          actual_delivery: string | null
-          buyer_id: string
-          created_at: string
-          current_location: string | null
-          delivery_partner_id: string | null
-          estimated_delivery: string | null
-          id: string
-          notes: string | null
-          order_id: string
-          pickup_point_id: string | null
-          product_id: string
-          seller_id: string
-          status: string | null
-          tracking_number: string | null
-          updated_at: string
-        }
-        Insert: {
-          actual_delivery?: string | null
-          buyer_id: string
-          created_at?: string
-          current_location?: string | null
-          delivery_partner_id?: string | null
-          estimated_delivery?: string | null
-          id?: string
-          notes?: string | null
-          order_id: string
-          pickup_point_id?: string | null
-          product_id: string
-          seller_id: string
-          status?: string | null
-          tracking_number?: string | null
-          updated_at?: string
-        }
-        Update: {
-          actual_delivery?: string | null
-          buyer_id?: string
-          created_at?: string
-          current_location?: string | null
-          delivery_partner_id?: string | null
-          estimated_delivery?: string | null
-          id?: string
-          notes?: string | null
-          order_id?: string
-          pickup_point_id?: string | null
-          product_id?: string
-          seller_id?: string
-          status?: string | null
-          tracking_number?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
       messages: {
         Row: {
           content: string
@@ -326,51 +230,6 @@ export type Database = {
           title?: string
           type?: string
           user_id?: string
-        }
-        Relationships: []
-      }
-      pickup_points: {
-        Row: {
-          address: string
-          contact_person: string | null
-          coordinates: unknown | null
-          created_at: string
-          district: string
-          id: string
-          is_active: boolean | null
-          name: string
-          operating_hours: string | null
-          phone: string | null
-          upazila: string | null
-          updated_at: string
-        }
-        Insert: {
-          address: string
-          contact_person?: string | null
-          coordinates?: unknown | null
-          created_at?: string
-          district: string
-          id?: string
-          is_active?: boolean | null
-          name: string
-          operating_hours?: string | null
-          phone?: string | null
-          upazila?: string | null
-          updated_at?: string
-        }
-        Update: {
-          address?: string
-          contact_person?: string | null
-          coordinates?: unknown | null
-          created_at?: string
-          district?: string
-          id?: string
-          is_active?: boolean | null
-          name?: string
-          operating_hours?: string | null
-          phone?: string | null
-          upazila?: string | null
-          updated_at?: string
         }
         Relationships: []
       }
@@ -537,36 +396,6 @@ export type Database = {
       }
     }
     Views: {
-      delivery_partners_public: {
-        Row: {
-          created_at: string | null
-          id: string | null
-          is_active: boolean | null
-          name: string | null
-          rating: number | null
-          updated_at: string | null
-          vehicle_type: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string | null
-          is_active?: boolean | null
-          name?: string | null
-          rating?: number | null
-          updated_at?: string | null
-          vehicle_type?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string | null
-          is_active?: boolean | null
-          name?: string | null
-          rating?: number | null
-          updated_at?: string | null
-          vehicle_type?: string | null
-        }
-        Relationships: []
-      }
       safe_public_profiles: {
         Row: {
           avatar_url: string | null
