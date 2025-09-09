@@ -38,14 +38,14 @@ const ChatFloatingButton = () => {
     const contactsPromises = conversations.map(async (conv) => {
       // This is a simplified version - you might want to create a hook for this
       const { data: userData } = await supabase
-        .from('profiles')
+        .from('safe_public_profiles')
         .select('name, avatar_url')
         .eq('id', conv.partnerId)
-        .single();
+        .maybeSingle();
 
       return {
         id: conv.partnerId,
-        name: userData?.name || 'Unknown User',
+        name: userData?.name || 'অজানা ব্যবহারকারী',
         avatar: userData?.avatar_url,
         lastMessage: conv.lastMessage,
         unreadCount: conv.unreadCount
