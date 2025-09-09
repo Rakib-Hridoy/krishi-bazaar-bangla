@@ -16,7 +16,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
@@ -246,8 +245,8 @@ const CreateListing = () => {
           images,
           video_url: videoUrl || null,
           category,
-          bidding_start_time: `${biddingStartTime}:00+06:00`,
-          bidding_deadline: `${biddingDeadline}:00+06:00`,
+          bidding_start_time: biddingStartTime,
+          bidding_deadline: biddingDeadline,
           seller_id: user.id
         })
         .select();

@@ -1,8 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
-import { toZonedTime } from 'date-fns-tz';
-import { formatInTimeZone } from 'date-fns-tz/formatInTimeZone';
 
 interface BiddingStatusProps {
   startTime?: string;
@@ -17,12 +14,12 @@ export default function BiddingStatus({ startTime, deadline }: BiddingStatusProp
     if (!deadline) return;
 
     const updateStatus = () => {
-      const now = toZonedTime(new Date(), 'Asia/Dhaka');
-      const deadlineDate = toZonedTime(new Date(deadline), 'Asia/Dhaka');
+      const now = new Date();
+      const deadlineDate = new Date(deadline);
       
       // Check if bidding has started
       if (startTime) {
-        const startDate = toZonedTime(new Date(startTime), 'Asia/Dhaka');
+        const startDate = new Date(startTime);
         if (now < startDate) {
           // Bidding hasn't started yet
           const timeToStart = startDate.getTime() - now.getTime();
@@ -30,17 +27,12 @@ export default function BiddingStatus({ startTime, deadline }: BiddingStatusProp
           const hours = Math.floor((timeToStart % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
           const minutes = Math.floor((timeToStart % (1000 * 60 * 60)) / (1000 * 60));
           
-          // Show exact start time instead of relative time for better clarity
-          const startTimeFormatted = formatInTimeZone(startDate, 'Asia/Dhaka', 'HH:mm');
-          
           if (days > 0) {
-            setTimeLeft(`${startTimeFormatted} (${days} দিন পর)`);
+            setTimeLeft(`${days} দিন ${hours} ঘন্টা পর`);
           } else if (hours > 0) {
-            setTimeLeft(`${startTimeFormatted} (${hours} ঘন্টা ${minutes} মিনিট পর)`);
-          } else if (minutes > 0) {
-            setTimeLeft(`${startTimeFormatted} (${minutes} মিনিট পর)`);
+            setTimeLeft(`${hours} ঘন্টা ${minutes} মিনিট পর`);
           } else {
-            setTimeLeft(`${startTimeFormatted} (শীঘ্রই)`);
+            setTimeLeft(`${minutes} মিনিট পর`);
           }
           setStatus('not_started');
           return;

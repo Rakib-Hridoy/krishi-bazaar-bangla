@@ -49,25 +49,18 @@ const ChatWindow = ({
   }, [receiverId, fetchMessages]);
 
   const checkMessagePermission = async () => {
-    if (!user?.id || !productId) return;
-    
+    if (!user || !productId) {
+      setCanSendMessage(true);
+      return;
+    }
+
     try {
-      // Check if current user has confirmed bid for this product or is the seller with confirmed buyer
-      const { data: confirmedBids, error } = await supabase
-        .from('bids')
-        .select('buyer_id, product_id, status')
-        .eq('product_id', productId)
-        .eq('status', 'confirmed');
-        
-      if (error) throw error;
-      
-      // User can message if they have confirmed bid OR if they are seller and someone has confirmed
-      const hasConfirmedBid = confirmedBids?.some(bid => bid.buyer_id === user.id);
-      const isSellerWithConfirmedBuyer = confirmedBids && confirmedBids.length > 0;
-      
-      setCanSendMessage(hasConfirmedBid || isSellerWithConfirmedBuyer);
+      // Check if current user has accepted bid for this product
+      const hasAccepted = await hasAcceptedBid(user.id, productId);
+      setCanSendMessage(hasAccepted);
     } catch (error) {
       console.error('Error checking message permission:', error);
+      setCanSendMessage(false);
     }
   };
 
@@ -220,7 +213,7 @@ const ChatWindow = ({
           </div>
         ) : (
           <div className="text-center text-sm text-muted-foreground p-2">
-            শুধুমাত্র confirmed বিডধারীরা মেসেজ পাঠাতে পারবেন
+            শুধুমাত্র এক্সেপ্টেড বিডধারীরা মেসেজ পাঠাতে পারবেন
           </div>
         )}
       </div>

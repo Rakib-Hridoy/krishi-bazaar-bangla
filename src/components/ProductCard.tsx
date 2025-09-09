@@ -21,31 +21,14 @@ export default function ProductCard({ product }: ProductCardProps) {
   const [isBiddingExpired, setIsBiddingExpired] = useState(false);
   const { user } = useAuth();
 
-  // Check messaging capability when component loads  
   useEffect(() => {
-    const checkMessagingCapability = async () => {
+    const checkBidStatus = async () => {
       if (user && user.id !== product.sellerId) {
-        // Check if user has confirmed bid for this product
-        const { data: confirmedBids } = await supabase
-          .from('bids')
-          .select('buyer_id, status')
-          .eq('product_id', product.id)
-          .eq('buyer_id', user.id)
-          .eq('status', 'confirmed');
-          
-        setCanMessage(confirmedBids && confirmedBids.length > 0);
-      } else if (user && user.id === product.sellerId) {
-        // Check if seller has any confirmed buyers for this product
-        const { data: confirmedBids } = await supabase
-          .from('bids')
-          .select('buyer_id, status')
-          .eq('product_id', product.id)
-          .eq('status', 'confirmed');
-          
-        setCanMessage(confirmedBids && confirmedBids.length > 0);
+        const hasAccepted = await hasAcceptedBid(user.id, product.id);
+        setCanMessage(hasAccepted);
       }
     };
-
+    
     // Check if bidding has expired
     if (product.biddingDeadline) {
       const deadline = new Date(product.biddingDeadline);
@@ -53,25 +36,22 @@ export default function ProductCard({ product }: ProductCardProps) {
       setIsBiddingExpired(now > deadline);
     }
     
-    checkMessagingCapability();
-  }, [user, product]);
+    checkBidStatus();
+  }, [user, product.id, product.sellerId, product.biddingDeadline]);
 
-  // Realtime: enable messaging when bid is confirmed
+  // Realtime: enable messaging immediately when seller accepts this buyer's bid
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user) return;
 
     const channel = supabase
-      .channel(`pc-bids-${product.id}-${user.id}`)
+      .channel(`bids-status-${product.id}-${user.id}`)
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'bids', filter: `product_id=eq.${product.id}` },
         (payload) => {
           const newRow = payload.new as { buyer_id: string; status: string };
-          if (newRow && newRow.status === 'confirmed') {
-            // Enable messaging for both buyer and seller when bid is confirmed
-            if (newRow.buyer_id === user.id || user.id === product.sellerId) {
-              setCanMessage(true);
-            }
+          if (newRow && newRow.buyer_id === user.id && newRow.status === 'accepted') {
+            setCanMessage(true);
           }
         }
       )
@@ -80,7 +60,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.id, product.id, product.sellerId]);
+  }, [user?.id, product.id]);
 
   const handleMessageClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -150,7 +130,7 @@ export default function ProductCard({ product }: ProductCardProps) {
               className="opacity-50 cursor-not-allowed"
             >
               <MessageCircle className="h-4 w-4 mr-1" />
-              বিড নিশ্চিত প্রয়োজন
+              বিড এক্সেপ্ট প্রয়োজন
             </Button>
           )}
         </CardFooter>

@@ -14,9 +14,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
 import { getProductsByUserId } from '@/hooks/useProducts';
-import { BidConfirmation } from '@/components/BidConfirmation';
-import WinnerConfirmation from '@/components/WinnerConfirmation';
-import { getUserBids, getSellerReceivedBids } from '@/backend/services/bidService';
+import { getUserBids } from '@/hooks/useBids';
 import { getUserReviews } from '@/hooks/useReviews';
 import { Product, Bid, Review } from '@/types';
 import { Link } from 'react-router-dom';
@@ -27,7 +25,6 @@ const Dashboard = () => {
   const { toast } = useToast();
   const [userProducts, setUserProducts] = useState<Product[]>([]);
   const [userBids, setUserBids] = useState<Bid[]>([]);
-  const [sellerBids, setSellerBids] = useState<Bid[]>([]);
   const [userReviews, setUserReviews] = useState<Review[]>([]);
   const [activeTab, setActiveTab] = useState("overview");
   const [loadingData, setLoadingData] = useState(false);
@@ -59,12 +56,6 @@ const Dashboard = () => {
           if (profile?.role === 'buyer') {
             const bids = await getUserBids(user.id);
             setUserBids(bids);
-          }
-          
-          // For seller, fetch bids on their products
-          if (profile?.role === 'seller') {
-            const receivedBids = await getSellerReceivedBids(user.id);
-            setSellerBids(receivedBids);
           }
           
           // Fetch reviews
@@ -163,15 +154,15 @@ const Dashboard = () => {
                   <Card>
                     <CardHeader className="pb-2">
                       <CardTitle className="text-sm font-medium">
-                        {profile?.role === 'seller' ? 'একটিভ বিড' : 'নিশ্চিতকরণ প্রয়োজন'}
+                        {profile?.role === 'seller' ? 'একটিভ বিড' : 'গৃহীত বিড'}
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">
-                          {profile?.role === 'seller' 
-                            ? sellerBids.filter(bid => bid.status === 'pending').length
-                            : userBids.filter(bid => bid.status === 'won' || bid.status === 'accepted').length
-                          }
+                      <div className="text-2xl font-bold">
+                        {profile?.role === 'seller' 
+                          ? '0' // To be calculated from real data later
+                          : userBids.filter(bid => bid.status === 'accepted').length
+                        }
                       </div>
                     </CardContent>
                   </Card>
@@ -237,28 +228,6 @@ const Dashboard = () => {
                 {profile?.role === 'buyer' && (
                   <>
                     <h3 className="text-xl font-semibold">আমার বিড</h3>
-                    
-                    {/* Show confirmation needed bids first */}
-                    {userBids.filter(bid => bid.status === 'accepted').length > 0 && (
-                      <div className="space-y-4">
-                        <h4 className="text-lg font-medium text-orange-600">নিশ্চিতকরণ প্রয়োজন</h4>
-                        {userBids
-                          .filter(bid => bid.status === 'accepted')
-                          .map(bid => (
-                            <BidConfirmation 
-                              key={bid.id} 
-                              bid={bid} 
-                              onStatusUpdate={() => {
-                                // Refresh bids
-                                if (user?.id) {
-                                  getUserBids(user.id).then(setUserBids);
-                                }
-                              }}
-                            />
-                          ))
-                        }
-                      </div>
-                    )}
                     
                     {userBids.length > 0 ? (
                       <BuyerBidsList bids={userBids} />
@@ -339,20 +308,11 @@ const BuyerBidsList = ({ bids }: { bids: Bid[] }) => {
               </Link>
               <span className={`px-2 py-1 text-xs rounded-full ${
                 bid.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                bid.status === 'won' ? 'bg-amber-100 text-amber-800' :
-                bid.status === 'accepted' ? 'bg-orange-100 text-orange-800' :
-                bid.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
-                bid.status === 'completed' ? 'bg-green-100 text-green-800' :
-                bid.status === 'abandoned' ? 'bg-red-100 text-red-800' :
+                bid.status === 'accepted' ? 'bg-green-100 text-green-800' :
                 'bg-red-100 text-red-800'
               }`}>
-                 {bid.status === 'pending' ? 'অপেক্ষারত' : 
-                  bid.status === 'won' ? 'জিতেছেন! (নিশ্চিত করুন)' :
-                  bid.status === 'accepted' ? 'গৃহীত (নিশ্চিত করুন)' :
-                 bid.status === 'confirmed' ? 'নিশ্চিত' :
-                 bid.status === 'completed' ? 'সম্পন্ন' :
-                 bid.status === 'abandoned' ? 'পরিত্যক্ত' :
-                 'প্রত্যাখ্যাত'}
+                {bid.status === 'pending' ? 'অপেক্ষারত' : 
+                 bid.status === 'accepted' ? 'গৃহীত' : 'প্রত্যাখ্যাত'}
               </span>
             </div>
             

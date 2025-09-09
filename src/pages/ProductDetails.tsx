@@ -23,7 +23,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/Navbar';
@@ -36,7 +35,6 @@ import ProductCard from '@/components/ProductCard';
 import BiddingStatus from '@/components/BiddingStatus';
 import ChatWindow from '@/components/ChatWindow';
 import { supabase } from '@/integrations/supabase/client';
-import { toZonedTime } from 'date-fns-tz';
 
 const ProductDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -73,27 +71,14 @@ const ProductDetails = () => {
           
           // Check bidding expiry and messaging permission
           if (productData.biddingDeadline) {
-            const deadline = toZonedTime(new Date(productData.biddingDeadline), 'Asia/Dhaka');
-            const now = toZonedTime(new Date(), 'Asia/Dhaka');
+            const deadline = new Date(productData.biddingDeadline);
+            const now = new Date();
             setIsBiddingExpired(now > deadline);
           }
           
-          if (user) {
-            // Check for confirmed bids - both buyer and seller can message after confirmation
-            const { data: confirmedBids } = await supabase
-              .from('bids')
-              .select('buyer_id, status')
-              .eq('product_id', productData.id)
-              .eq('status', 'confirmed');
-              
-            if (user.id !== productData.sellerId) {
-              // Buyer can message if they have confirmed bid
-              const hasConfirmed = confirmedBids?.some(bid => bid.buyer_id === user.id);
-              setCanMessage(hasConfirmed || false);
-            } else {
-              // Seller can message if any buyer has confirmed
-              setCanMessage(confirmedBids && confirmedBids.length > 0);
-            }
+          if (user && user.id !== productData.sellerId) {
+            const hasAccepted = await hasAcceptedBid(user.id, productData.id);
+            setCanMessage(hasAccepted);
           }
         }
       } catch (error) {
@@ -111,7 +96,7 @@ const ProductDetails = () => {
     fetchProduct();
   }, [id, toast, user]);
 
-  // Realtime: when bid is confirmed, enable messaging for both buyer and seller
+  // Realtime: when this buyer's bid gets accepted, enable messaging instantly
   useEffect(() => {
     if (!user || !id) return;
 
@@ -122,11 +107,8 @@ const ProductDetails = () => {
         { event: 'UPDATE', schema: 'public', table: 'bids', filter: `product_id=eq.${id}` },
         (payload) => {
           const newRow = payload.new as { buyer_id: string; status: string };
-          if (newRow && newRow.status === 'confirmed') {
-            // Enable messaging for both buyer and seller when bid is confirmed
-            if (newRow.buyer_id === user.id || user.id === product?.sellerId) {
-              setCanMessage(true);
-            }
+          if (newRow && newRow.buyer_id === user.id && newRow.status === 'accepted') {
+            setCanMessage(true);
           }
         }
       )
@@ -135,7 +117,7 @@ const ProductDetails = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.id, id, product?.sellerId]);
+  }, [user?.id, id]);
 
   const handleBidSubmit = async () => {
     if (!isAuthenticated) {
@@ -201,8 +183,31 @@ const ProductDetails = () => {
     }
   };
 
-  // Note: Bid acceptance is now automatic when auction ends
-  // Winners will be notified automatically
+  const handleAcceptBid = async (bidId: string) => {
+    if (!isAuthenticated || !product || user?.id !== product.sellerId) return;
+    
+    try {
+      await updateBidStatus(bidId, 'accepted');
+      
+      // Check if user can now message by refreshing the bid check
+      if (user) {
+        const hasAccepted = await hasAcceptedBid(user.id, product.id);
+        setCanMessage(hasAccepted);
+      }
+    } catch (error) {
+      console.error('Error accepting bid:', error);
+    }
+  };
+
+  const handleRejectBid = async (bidId: string) => {
+    if (!isAuthenticated || !product || user?.id !== product.sellerId) return;
+    
+    try {
+      await updateBidStatus(bidId, 'rejected');
+    } catch (error) {
+      console.error('Error rejecting bid:', error);
+    }
+  };
 
   const handleMessageClick = () => {
     setShowChat(true);
@@ -365,19 +370,17 @@ const ProductDetails = () => {
                       className="opacity-50 cursor-not-allowed"
                     >
                       <MessageCircle className="h-4 w-4 mr-1" />
-                      নিলাম confirmed করার পর মেসেজ করুন
+                      বিড এক্সেপ্ট প্রয়োজন
                     </Button>
                   )}
                   
-                  {isBiddingExpired && (
                     <Button
                       variant="secondary"
                       disabled
                       className="opacity-60"
                     >
-                      বিডিং সময় শেষ
+                      বিডিং সময় শুরু হয়নি/শেষ
                     </Button>
-                  )}
                 </div>
               </div>
               
@@ -437,15 +440,37 @@ const ProductDetails = () => {
                         </div>
                         
                         {bid.status === 'pending' ? (
-                          <Badge variant="secondary">অপেক্ষমাণ</Badge>
-                        ) : bid.status === 'won' ? (
-                          <Badge className="bg-amber-500 hover:bg-amber-600">বিজয়ী 🏆</Badge>
-                        ) : bid.status === 'rejected' ? (
-                          <Badge variant="destructive">প্রত্যাখ্যাত</Badge>
-                        ) : bid.status === 'confirmed' ? (
-                          <Badge className="bg-green-500 hover:bg-green-600">নিশ্চিত</Badge>
+                          isAuthenticated && user?.id === product.sellerId ? (
+                            <div className="flex space-x-2">
+                              <Button 
+                                className="flex-1 bg-agriculture-green-dark hover:bg-agriculture-green-light" 
+                                size="sm"
+                                onClick={() => handleAcceptBid(bid.id)}
+                              >
+                                গ্রহণ করুন
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="flex-1"
+                                onClick={() => handleRejectBid(bid.id)}
+                              >
+                                প্রত্যাখ্যান করুন
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="bg-yellow-100 text-yellow-800 py-2 px-3 rounded text-center">
+                              অপেক্ষমাণ
+                            </div>
+                          )
+                        ) : bid.status === 'accepted' ? (
+                          <div className="bg-green-100 text-green-800 py-2 px-3 rounded text-center">
+                            গৃহীত
+                          </div>
                         ) : (
-                          <Badge variant="outline" className="capitalize">{bid.status}</Badge>
+                          <div className="bg-red-100 text-red-800 py-2 px-3 rounded text-center">
+                            প্রত্যাখ্যাত
+                          </div>
                         )}
                       </CardContent>
                     </Card>

@@ -23,12 +23,8 @@ export interface Bid {
   buyerId: string;
   buyerName: string;
   amount: number;
-  status: 'pending' | 'accepted' | 'rejected' | 'confirmed' | 'completed' | 'abandoned' | 'won';
+  status: 'pending' | 'accepted' | 'rejected';
   createdAt: string;
-  confirmationDeadline?: string;
-  confirmedAt?: string;
-  abandonedAt?: string;
-  productTitle?: string;
 }
 
 export interface Review {
@@ -51,7 +47,4 @@ export interface User {
   avatar?: string;
   rating?: number;
   reviewCount?: number;
-  bidAbandonmentCount?: number;
-  lastAbandonmentAt?: string;
-  bidSuspensionUntil?: string;
 }
