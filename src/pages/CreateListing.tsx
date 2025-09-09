@@ -33,6 +33,7 @@ const CreateListing = () => {
   const [category, setCategory] = useState('');
   const [images, setImages] = useState<string[]>([]);
   const [videoUrl, setVideoUrl] = useState<string>('');
+  const [biddingStartTime, setBiddingStartTime] = useState('');
   const [biddingDeadline, setBiddingDeadline] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
@@ -202,7 +203,7 @@ const CreateListing = () => {
       return;
     }
     
-    if (!title || !description || price === '' || quantity === '' || !location || !category || !biddingDeadline) {
+    if (!title || !description || price === '' || quantity === '' || !location || !category || !biddingStartTime || !biddingDeadline) {
       toast({
         title: "সব ফিল্ড পূরণ করুন",
         description: "অনুগ্রহ করে সব প্রয়োজনীয় ফিল্ড পূরণ করুন।",
@@ -211,12 +212,24 @@ const CreateListing = () => {
       return;
     }
     
-    // Validate bidding deadline is in the future
+    // Validate bidding start time is in the future
+    const startDate = new Date(biddingStartTime);
+    const now = new Date();
+    if (startDate <= now) {
+      toast({
+        title: "ভুল বিডিং শুরুর সময়",
+        description: "বিডিং শুরুর সময় ভবিষ্যতের সময় হতে হবে।",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Validate bidding deadline is after start time
     const deadlineDate = new Date(biddingDeadline);
-    if (deadlineDate <= new Date()) {
+    if (deadlineDate <= startDate) {
       toast({
         title: "ভুল সময়সীমা",
-        description: "বিডিং এর সময়সীমা ভবিষ্যতের সময় হতে হবে।",
+        description: "বিডিং শেষের সময় অবশ্যই শুরুর সময়ের পরে হতে হবে।",
         variant: "destructive",
       });
       return;
@@ -246,6 +259,7 @@ const CreateListing = () => {
           images,
           video_url: videoUrl || null,
           category,
+          bidding_start_time: biddingStartTime,
           bidding_deadline: biddingDeadline,
           seller_id: user.id
         })
@@ -396,7 +410,18 @@ const CreateListing = () => {
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="bidding-deadline">বিডিং এর সময়সীমা</Label>
+                      <Label htmlFor="bidding-start">বিডিং শুরুর সময়</Label>
+                      <Input 
+                        id="bidding-start"
+                        type="datetime-local" 
+                        value={biddingStartTime}
+                        onChange={(e) => setBiddingStartTime(e.target.value)}
+                        required
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="bidding-deadline">বিডিং শেষের সময়</Label>
                       <Input 
                         id="bidding-deadline"
                         type="datetime-local" 

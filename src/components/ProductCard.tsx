@@ -95,7 +95,7 @@ export default function ProductCard({ product }: ProductCardProps) {
               <p className="text-sm text-agriculture-amber">
                 পরিমাণ: {product.quantity} {product.unit}
               </p>
-              <BiddingStatus deadline={product.biddingDeadline} />
+              <BiddingStatus startTime={product.biddingStartTime} deadline={product.biddingDeadline} />
             </div>
             </div>
           </CardContent>

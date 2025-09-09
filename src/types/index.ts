@@ -13,6 +13,7 @@ export interface Product {
   sellerName: string;
   createdAt: string;
   category: string;
+  biddingStartTime?: string;
   biddingDeadline?: string;
 }
 

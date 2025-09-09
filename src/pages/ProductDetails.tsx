@@ -152,8 +152,8 @@ const ProductDetails = () => {
     
     if (isBiddingExpired) {
       toast({
-        title: "বিডিং সময় শেষ",
-        description: "এই পণ্যের বিডিং সময় শেষ হয়ে গেছে।",
+        title: "বিডিং অনুপলব্ধ",
+        description: "এই পণ্যের বিডিং সময় এখনো শুরু হয়নি বা শেষ হয়ে গেছে।",
         variant: "destructive"
       });
       return;
@@ -293,7 +293,7 @@ const ProductDetails = () => {
               <div>
                 <div className="flex items-center justify-between">
                   <h1 className="text-3xl font-bold">{product.title}</h1>
-                  <BiddingStatus deadline={product.biddingDeadline} />
+                  <BiddingStatus startTime={product.biddingStartTime} deadline={product.biddingDeadline} />
                 </div>
                 <p className="text-muted-foreground mt-1">{product.category} • {product.location}</p>
               </div>
@@ -374,15 +374,13 @@ const ProductDetails = () => {
                     </Button>
                   )}
                   
-                  {isBiddingExpired && (
                     <Button
                       variant="secondary"
                       disabled
                       className="opacity-60"
                     >
-                      বিডিং সময় শেষ
+                      বিডিং সময় শুরু হয়নি/শেষ
                     </Button>
-                  )}
                 </div>
               </div>
               

@@ -28,6 +28,7 @@ export function useProducts(categoryFilter: string = 'all', searchQuery: string 
             video_url,
             category,
             created_at,
+            bidding_start_time,
             bidding_deadline,
             seller_id
           `)
@@ -72,6 +73,7 @@ export function useProducts(categoryFilter: string = 'all', searchQuery: string 
           sellerName: sellerMap.get(item.seller_id) ?? 'অজানা বিক্রেতা',
           createdAt: item.created_at,
           category: item.category,
+          biddingStartTime: item.bidding_start_time,
           biddingDeadline: item.bidding_deadline
         }));
 
@@ -106,6 +108,7 @@ export function useProducts(categoryFilter: string = 'all', searchQuery: string 
           images: productData.images,
           video_url: productData.videoUrl,
           category: productData.category,
+          bidding_start_time: productData.biddingStartTime,
           bidding_deadline: productData.biddingDeadline,
           seller_id: productData.sellerId
         })
@@ -169,6 +172,7 @@ export async function getRelatedProducts(productId: string, category: string, li
         video_url,
         category,
         created_at,
+        bidding_start_time,
         bidding_deadline,
         seller_id
       `)
@@ -208,6 +212,7 @@ export async function getRelatedProducts(productId: string, category: string, li
       sellerName: sellerMap.get(item.seller_id) ?? 'অজানা বিক্রেতা',
       createdAt: item.created_at,
       category: item.category,
+      biddingStartTime: item.bidding_start_time,
       biddingDeadline: item.bidding_deadline
     }));
   } catch (error) {
@@ -232,6 +237,7 @@ export async function getProductById(id: string): Promise<Product | null> {
         video_url,
         category,
         created_at,
+        bidding_start_time,
         bidding_deadline,
         seller_id
       `)
@@ -265,6 +271,7 @@ export async function getProductById(id: string): Promise<Product | null> {
       sellerName: seller?.name || 'অজানা বিক্রেতা',
       createdAt: data.created_at,
       category: data.category,
+      biddingStartTime: data.bidding_start_time,
       biddingDeadline: data.bidding_deadline
     };
   } catch (error) {
@@ -289,6 +296,7 @@ export async function getProductsByUserId(userId: string): Promise<Product[]> {
         video_url,
         category,
         created_at,
+        bidding_start_time,
         bidding_deadline,
         seller_id
       `)
@@ -324,6 +332,7 @@ export async function getProductsByUserId(userId: string): Promise<Product[]> {
       sellerName,
       createdAt: item.created_at,
       category: item.category,
+      biddingStartTime: item.bidding_start_time,
       biddingDeadline: item.bidding_deadline
     }));
   } catch (error) {
