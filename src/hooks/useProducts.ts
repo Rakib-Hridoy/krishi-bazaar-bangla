@@ -166,8 +166,7 @@ export async function getRelatedProducts(productId: string, category: string, li
         category,
         created_at,
         bidding_deadline,
-        seller_id,
-        profiles:seller_id (name)
+        seller_id
       `)
       .eq('category', category)
       .neq('id', productId) // Exclude current product
@@ -176,6 +175,19 @@ export async function getRelatedProducts(productId: string, category: string, li
 
     if (error) {
       throw error;
+    }
+
+    // Fetch seller names from safe_public_profiles
+    const sellerIds = Array.from(new Set(data.map((d: any) => d.seller_id).filter(Boolean)));
+    let sellerMap = new Map<string, string>();
+    if (sellerIds.length) {
+      const { data: sellers } = await supabase
+        .from('safe_public_profiles')
+        .select('id, name')
+        .in('id', sellerIds as string[]);
+      if (sellers) {
+        sellerMap = new Map(sellers.map((s: any) => [s.id, s.name || 'অজানা বিক্রেতা']));
+      }
     }
 
     return data.map(item => ({
@@ -188,7 +200,7 @@ export async function getRelatedProducts(productId: string, category: string, li
       location: item.location,
       images: item.images || [],
       sellerId: item.seller_id,
-      sellerName: item.profiles?.name || 'অজানা বিক্রেতা',
+      sellerName: sellerMap.get(item.seller_id) ?? 'অজানা বিক্রেতা',
       createdAt: item.created_at,
       category: item.category,
       biddingDeadline: item.bidding_deadline
@@ -215,8 +227,7 @@ export async function getProductById(id: string): Promise<Product | null> {
         category,
         created_at,
         bidding_deadline,
-        seller_id,
-        profiles:seller_id (name, email, phone, address, avatar_url)
+        seller_id
       `)
       .eq('id', id)
       .single();
@@ -226,6 +237,13 @@ export async function getProductById(id: string): Promise<Product | null> {
     }
 
     if (!data) return null;
+
+    // Fetch seller name from safe_public_profiles
+    const { data: seller } = await supabase
+      .from('safe_public_profiles')
+      .select('name')
+      .eq('id', data.seller_id)
+      .single();
 
     return {
       id: data.id,
@@ -237,7 +255,7 @@ export async function getProductById(id: string): Promise<Product | null> {
       location: data.location,
       images: data.images || [],
       sellerId: data.seller_id,
-      sellerName: data.profiles?.name || 'অজানা বিক্রেতা',
+      sellerName: seller?.name || 'অজানা বিক্রেতা',
       createdAt: data.created_at,
       category: data.category,
       biddingDeadline: data.bidding_deadline
@@ -264,14 +282,24 @@ export async function getProductsByUserId(userId: string): Promise<Product[]> {
         category,
         created_at,
         bidding_deadline,
-        seller_id,
-        profiles:seller_id (name)
+        seller_id
       `)
       .eq('seller_id', userId)
       .order('created_at', { ascending: false });
 
     if (error) {
       throw error;
+    }
+
+    // Fetch seller name from safe_public_profiles
+    let sellerName = 'অজানা বিক্রেতা';
+    if (data && data.length > 0) {
+      const { data: seller } = await supabase
+        .from('safe_public_profiles')
+        .select('name')
+        .eq('id', userId)
+        .single();
+      sellerName = seller?.name || 'অজানা বিক্রেতা';
     }
 
     return data.map(item => ({
@@ -284,7 +312,7 @@ export async function getProductsByUserId(userId: string): Promise<Product[]> {
       location: item.location,
       images: item.images || [],
       sellerId: item.seller_id,
-      sellerName: item.profiles?.name || 'অজানা বিক্রেতা',
+      sellerName,
       createdAt: item.created_at,
       category: item.category,
       biddingDeadline: item.bidding_deadline
