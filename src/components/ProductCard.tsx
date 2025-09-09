@@ -2,7 +2,7 @@
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, Video } from "lucide-react";
 import { Product } from "@/types";
 import { useState, useEffect } from "react";
 import ChatWindow from "@/components/ChatWindow";
@@ -72,12 +72,17 @@ export default function ProductCard({ product }: ProductCardProps) {
     <>
       <Card className={`h-full overflow-hidden transition-all hover:shadow-lg relative ${isBiddingExpired ? 'opacity-60 cursor-not-allowed' : ''}`}>
         <Link to={`/product/${product.id}`}>
-          <div className="aspect-square overflow-hidden">
+          <div className="aspect-square overflow-hidden relative">
             <img 
               src={product.images[0]} 
               alt={product.title} 
               className="h-full w-full object-cover transition-transform hover:scale-105"
             />
+            {product.videoUrl && (
+              <div className="absolute top-2 right-2 bg-black/70 text-white p-1 rounded-full">
+                <Video className="h-4 w-4" />
+              </div>
+            )}
           </div>
           <CardContent className="p-4">
             <h3 className="font-semibold text-lg mb-1">{product.title}</h3>

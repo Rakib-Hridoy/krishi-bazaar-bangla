@@ -8,6 +8,7 @@ export interface Product {
   unit: string;
   location: string;
   images: string[];
+  videoUrl?: string;
   sellerId: string;
   sellerName: string;
   createdAt: string;

@@ -16,6 +16,7 @@ export async function getProducts(categoryFilter: string = 'all', searchQuery: s
         unit,
         location,
         images,
+        video_url,
         category,
         created_at,
         seller_id
@@ -54,6 +55,7 @@ export async function getProducts(categoryFilter: string = 'all', searchQuery: s
       unit: item.unit,
       location: item.location,
       images: item.images || [],
+      videoUrl: item.video_url || undefined,
       sellerId: item.seller_id,
       sellerName: sellerMap.get(item.seller_id) ?? 'অজানা বিক্রেতা',
       createdAt: item.created_at,
@@ -79,6 +81,7 @@ export async function getProductById(id: string): Promise<Product | null> {
         unit,
         location,
         images,
+        video_url,
         category,
         created_at,
         seller_id
@@ -106,6 +109,7 @@ export async function getProductById(id: string): Promise<Product | null> {
       unit: data.unit,
       location: data.location,
       images: data.images || [],
+      videoUrl: data.video_url || undefined,
       sellerId: data.seller_id,
       sellerName,
       createdAt: data.created_at,
@@ -131,6 +135,7 @@ export async function getProductsByUserId(userId: string): Promise<Product[]> {
         unit,
         location,
         images,
+        video_url,
         category,
         created_at,
         seller_id
@@ -160,6 +165,7 @@ export async function getProductsByUserId(userId: string): Promise<Product[]> {
       unit: item.unit,
       location: item.location,
       images: item.images || [],
+      videoUrl: item.video_url || undefined,
       sellerId: item.seller_id,
       sellerName,
       createdAt: item.created_at,
@@ -184,6 +190,7 @@ export async function addProduct(productData: Omit<Product, 'id' | 'sellerId' | 
         unit: productData.unit,
         location: productData.location,
         images: productData.images,
+        video_url: productData.videoUrl,
         category: productData.category,
         seller_id: productData.sellerId
       })
@@ -231,6 +238,7 @@ export async function getRelatedProducts(productId: string, category: string, li
         unit,
         location,
         images,
+        video_url,
         category,
         created_at,
         seller_id
@@ -263,6 +271,7 @@ export async function getRelatedProducts(productId: string, category: string, li
       unit: item.unit,
       location: item.location,
       images: item.images || [],
+      videoUrl: item.video_url || undefined,
       sellerId: item.seller_id,
       sellerName: sellerMap.get(item.seller_id) ?? 'অজানা বিক্রেতা',
       createdAt: item.created_at,

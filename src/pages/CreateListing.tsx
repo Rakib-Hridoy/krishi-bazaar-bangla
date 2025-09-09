@@ -32,9 +32,11 @@ const CreateListing = () => {
   const [location, setLocation] = useState('');
   const [category, setCategory] = useState('');
   const [images, setImages] = useState<string[]>([]);
+  const [videoUrl, setVideoUrl] = useState<string>('');
   const [biddingDeadline, setBiddingDeadline] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
   
   const placeholderImages = [
     'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9',
@@ -130,6 +132,63 @@ const CreateListing = () => {
       setUploadingImages(false);
     }
   };
+
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Check file size (limit to 50MB)
+    if (file.size > 50 * 1024 * 1024) {
+      toast({
+        title: "ভিডিও ফাইল খুব বড়",
+        description: "ভিডিও ফাইলের সাইজ ৫০এমবি এর কম হতে হবে।",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      setUploadingVideo(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+      const filePath = `${user!.id}/${fileName}`;
+      
+      const { data, error } = await supabase.storage
+        .from('product-videos')
+        .upload(filePath, file);
+        
+      if (error) {
+        throw error;
+      }
+      
+      const { data: urlData } = supabase.storage
+        .from('product-videos')
+        .getPublicUrl(filePath);
+        
+      setVideoUrl(urlData.publicUrl);
+      toast({
+        title: "ভিডিও আপলোড সফল",
+        description: "ভিডিও সফলভাবে আপলোড করা হয়েছে।",
+      });
+    } catch (error: any) {
+      console.error('Video upload error:', error);
+      toast({
+        title: "ভিডিও আপলোড ব্যর্থ",
+        description: error.message || "ভিডিও আপলোড করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingVideo(false);
+    }
+  };
+
+  const removeVideo = () => {
+    setVideoUrl('');
+    toast({
+      title: "ভিডিও সরানো হয়েছে",
+      description: "ভিডিও সফলভাবে সরানো হয়েছে।",
+    });
+  };
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -185,6 +244,7 @@ const CreateListing = () => {
           unit,
           location,
           images,
+          video_url: videoUrl || null,
           category,
           bidding_deadline: biddingDeadline,
           seller_id: user.id
@@ -445,6 +505,54 @@ const CreateListing = () => {
                         {isSubmitting ? "প্রসেসিং..." : "পণ্য যোগ করুন"}
                       </Button>
                     </div>
+                  </CardContent>
+                </Card>
+                
+                {/* Video Upload Section */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>পণ্যের ভিডিও (ঐচ্ছিক)</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      পণ্যের ভিডিও যোগ করুন যাতে ক্রেতারা আরো ভালোভাবে পণ্য দেখতে পারে (সর্বোচ্চ ৫০এমবি)
+                    </p>
+                    
+                    {!videoUrl ? (
+                      <div>
+                        <Label htmlFor="video-upload" className="block mb-2">ভিডিও আপলোড করুন</Label>
+                        <Input
+                          id="video-upload"
+                          type="file"
+                          accept="video/*"
+                          onChange={handleVideoUpload}
+                          disabled={uploadingVideo}
+                        />
+                        {uploadingVideo && (
+                          <p className="text-sm mt-2 text-blue-600">ভিডিও আপলোড হচ্ছে...</p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <p className="text-sm font-medium text-green-600">✓ ভিডিও আপলোড সম্পন্ন</p>
+                        <video 
+                          controls 
+                          className="w-full max-h-48 rounded-md"
+                          src={videoUrl}
+                        >
+                          আপনার ব্রাউজার ভিডিও প্লেব্যাক সাপোর্ট করে না।
+                        </video>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={removeVideo}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          ভিডিও সরান
+                        </Button>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
                 

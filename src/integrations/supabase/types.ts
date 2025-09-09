@@ -389,6 +389,7 @@ export type Database = {
           title: string
           unit: string
           updated_at: string | null
+          video_url: string | null
         }
         Insert: {
           bidding_deadline?: string
@@ -404,6 +405,7 @@ export type Database = {
           title: string
           unit: string
           updated_at?: string | null
+          video_url?: string | null
         }
         Update: {
           bidding_deadline?: string
@@ -419,6 +421,7 @@ export type Database = {
           title?: string
           unit?: string
           updated_at?: string | null
+          video_url?: string | null
         }
         Relationships: [
           {

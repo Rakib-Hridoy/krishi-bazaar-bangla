@@ -246,8 +246,8 @@ const ProductDetails = () => {
       <main className="flex-1 py-12 px-4">
         <div className="container mx-auto max-w-6xl">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-            {/* Product Images */}
-            <div>
+            {/* Product Images and Video */}
+            <div className="space-y-4">
               {product.images && product.images.length > 0 ? (
                 <Carousel className="w-full">
                   <CarouselContent>
@@ -269,6 +269,23 @@ const ProductDetails = () => {
               ) : (
                 <div className="aspect-square w-full overflow-hidden rounded-md bg-gray-100 flex items-center justify-center">
                   <p className="text-gray-500">কোন ছবি নেই</p>
+                </div>
+              )}
+              
+              {/* Product Video */}
+              {product.videoUrl && (
+                <div className="w-full">
+                  <h3 className="text-lg font-medium mb-3">পণ্যের ভিডিও</h3>
+                  <video 
+                    controls 
+                    className="w-full rounded-md"
+                    poster={product.images?.[0]}
+                  >
+                    <source src={product.videoUrl} type="video/mp4" />
+                    <source src={product.videoUrl} type="video/webm" />
+                    <source src={product.videoUrl} type="video/ogg" />
+                    আপনার ব্রাউজার ভিডিও প্লেব্যাক সাপোর্ট করে না।
+                  </video>
                 </div>
               )}
             </div>
