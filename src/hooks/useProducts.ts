@@ -108,8 +108,8 @@ export function useProducts(categoryFilter: string = 'all', searchQuery: string 
           images: productData.images,
           video_url: productData.videoUrl,
           category: productData.category,
-          bidding_start_time: productData.biddingStartTime,
-          bidding_deadline: productData.biddingDeadline,
+          bidding_start_time: new Date(productData.biddingStartTime).toISOString(),
+          bidding_deadline: new Date(productData.biddingDeadline).toISOString(),
           seller_id: productData.sellerId
         })
         .select('*');

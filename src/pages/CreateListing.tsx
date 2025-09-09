@@ -245,8 +245,8 @@ const CreateListing = () => {
           images,
           video_url: videoUrl || null,
           category,
-          bidding_start_time: biddingStartTime,
-          bidding_deadline: biddingDeadline,
+          bidding_start_time: new Date(biddingStartTime).toISOString(),
+          bidding_deadline: new Date(biddingDeadline).toISOString(),
           seller_id: user.id
         })
         .select();
