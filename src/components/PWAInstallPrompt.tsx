@@ -22,7 +22,7 @@ const PWAInstallPrompt = () => {
             অ্যাপ ইনস্টল করুন
           </h3>
           <p className="text-xs text-muted-foreground mb-3">
-            দ্রুত অ্যাক্সেস এবং অফলাইন ব্যবহারের জন্য কৃষি বাজার বাংলা অ্যাপটি ইনস্টল করুন।
+            দ্রুত অ্যাক্সেস এবং অফলাইন ব্যবহারের জন্য AgroBid বাংলা অ্যাপটি ইনস্টল করুন।
           </p>
           
           <div className="flex gap-2">

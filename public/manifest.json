@@ -1,6 +1,6 @@
 {
-  "name": "কৃষি বাজার বাংলা",
-  "short_name": "কৃষি বাজার",
+  "name": "AgroBid বাংলা",
+  "short_name": "AgroBid",
   "description": "বাংলাদেশের সবচেয়ে বড় কৃষি পণ্যের অনলাইন মার্কেটপ্লেস",
   "start_url": "/",
   "display": "standalone",

@@ -7,7 +7,7 @@ export default function Footer() {
       <div className="container mx-auto">
         <div className="flex flex-col md:flex-row justify-between">
           <div className="mb-6 md:mb-0">
-            <h2 className="text-2xl font-bold mb-4">কৃষি বাজার</h2>
+            <h2 className="text-2xl font-bold mb-4">AgroBid</h2>
             <p className="max-w-xs">বাংলাদেশের কৃষকদের জন্য সরাসরি বিপণন প্ল্যাটফর্ম। সিন্ডিকেট মুক্ত কৃষি পণ্য বিক্রয় করুন এবং কিনুন।</p>
           </div>
           
@@ -33,7 +33,7 @@ export default function Footer() {
         </div>
         
         <div className="border-t border-gray-500 mt-8 pt-6">
-          <p className="text-center">&copy; {new Date().getFullYear()} কৃষি বাজার। সর্বস্বত্ব সংরক্ষিত।</p>
+          <p className="text-center">&copy; {new Date().getFullYear()} AgroBid। সর্বস্বত্ব সংরক্ষিত।</p>
         </div>
       </div>
     </footer>

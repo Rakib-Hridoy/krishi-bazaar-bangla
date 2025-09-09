@@ -9,6 +9,7 @@ import ProductCard from '@/components/ProductCard';
 import { Link } from 'react-router-dom';
 import { useProducts } from '@/hooks/useProducts';
 import ChatFloatingButton from '@/components/ChatFloatingButton';
+import heroBanner from "@/assets/hero-banner.jpg";
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -62,7 +63,7 @@ const Index = () => {
             </div>
             <div className="md:w-1/2 flex justify-center">
               <img 
-                src="https://images.unsplash.com/photo-1465379944081-7f47de8d74ac" 
+                src={heroBanner}
                 alt="কৃষক" 
                 className="rounded-lg shadow-lg max-w-full h-auto"
                 style={{ maxHeight: "400px" }}
@@ -183,7 +184,7 @@ const Index = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <div className="bg-white p-6 rounded-lg shadow">
               <p className="mb-4">
-                "কৃষি বাজার আমার পণ্য বিক্রির জন্য সবচেয়ে ভালো প্ল্যাটফর্ম। আগে দালালরা আমার পণ্য কম দামে কিনে বেশি দামে বিক্রি করত, এখন আমি সরাসরি বিক্রি করি।"
+                "AgroBid আমার পণ্য বিক্রির জন্য সবচেয়ে ভালো প্ল্যাটফর্ম। আগে দালালরা আমার পণ্য কম দামে কিনে বেশি দামে বিক্রি করত, এখন আমি সরাসরি বিক্রি করি।"
               </p>
               <p className="font-bold">- জসিম উদ্দীন, কৃষক</p>
             </div>

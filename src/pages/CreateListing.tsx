@@ -39,12 +39,6 @@ const CreateListing = () => {
   const [uploadingImages, setUploadingImages] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
   
-  const placeholderImages = [
-    'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9',
-    'https://images.unsplash.com/photo-1493962853295-0fd70327578a',
-    'https://images.unsplash.com/photo-1465379944081-7f47de8d74ac',
-    'https://images.unsplash.com/photo-1452378174528-3090a4bba7b2'
-  ];
   
   const categories = [
     { id: 'শস্য', name: 'শস্য' },
@@ -79,14 +73,6 @@ const CreateListing = () => {
       navigate('/dashboard');
     }
   }, [user, profile, isAuthenticated, isLoading, navigate, toast]);
-
-  const handleImageSelect = (imageUrl: string) => {
-    if (images.includes(imageUrl)) {
-      setImages(images.filter(img => img !== imageUrl));
-    } else {
-      setImages([...images, imageUrl]);
-    }
-  };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -455,34 +441,6 @@ const CreateListing = () => {
                         onChange={handleImageUpload}
                         disabled={uploadingImages}
                       />
-                      {uploadingImages && <p className="text-sm mt-2">ছবি আপলোড হচ্ছে...</p>}
-                    </div>
-                    
-                    <p className="text-sm text-muted-foreground mb-2">
-                      অথবা নমুনা ছবি থেকে নির্বাচন করুন
-                    </p>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      {placeholderImages.map((img, index) => (
-                        <div 
-                          key={index}
-                          className={`relative aspect-square border-2 rounded-md overflow-hidden cursor-pointer ${
-                            images.includes(img) ? 'border-agriculture-green-dark' : 'border-transparent'
-                          }`}
-                          onClick={() => handleImageSelect(img)}
-                        >
-                          <img 
-                            src={img}
-                            alt={`Product sample ${index + 1}`}
-                            className="w-full h-full object-cover"
-                          />
-                          {images.includes(img) && (
-                            <div className="absolute top-2 right-2 bg-agriculture-green-dark text-white w-6 h-6 rounded-full flex items-center justify-center">
-                              ✓
-                            </div>
-                          )}
-                        </div>
-                      ))}
                     </div>
                     
                     {images.length > 0 && (
@@ -490,28 +448,23 @@ const CreateListing = () => {
                         <p className="text-sm font-medium mb-2">আপলোড করা ছবি ({images.length})</p>
                         <div className="grid grid-cols-4 gap-2">
                           {images.map((img, index) => (
-                            img !== placeholderImages[0] && 
-                            img !== placeholderImages[1] && 
-                            img !== placeholderImages[2] && 
-                            img !== placeholderImages[3] && (
-                              <div key={index} className="relative aspect-square rounded-md overflow-hidden">
-                                <img 
-                                  src={img} 
-                                  alt={`Uploaded ${index}`} 
-                                  className="w-full h-full object-cover"
-                                />
-                                <button
-                                  type="button"
-                                  className="absolute top-1 right-1 bg-red-500 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setImages(images.filter(i => i !== img));
-                                  }}
-                                >
-                                  ✕
-                                </button>
-                              </div>
-                            )
+                            <div key={index} className="relative aspect-square rounded-md overflow-hidden">
+                              <img 
+                                src={img} 
+                                alt={`Uploaded ${index}`} 
+                                className="w-full h-full object-cover"
+                              />
+                              <button
+                                type="button"
+                                className="absolute top-1 right-1 bg-red-500 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setImages(images.filter(i => i !== img));
+                                }}
+                              >
+                                ✕
+                              </button>
+                            </div>
                           ))}
                         </div>
                       </div>
