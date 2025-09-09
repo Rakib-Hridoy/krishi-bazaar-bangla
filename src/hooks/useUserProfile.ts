@@ -72,9 +72,9 @@ export function useUserProfile(userId?: string) {
           }
         } else {
           // For other users, get only basic public information
-          // Filter sensitive data by only selecting public columns
+          // Use safe_public_profiles view for public data
           const { data, error } = await supabase
-            .from('profiles')
+            .from('safe_public_profiles')
             .select('id, name, role, avatar_url')
             .eq('id', userId)
             .single();
