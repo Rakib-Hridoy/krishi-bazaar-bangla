@@ -66,26 +66,32 @@ const ChatWindow = ({
     
     if (newSenderIds.length === 0) return;
     
-    const profilePromises = newSenderIds.map(async (senderId) => {
-      const { data } = await supabase
+    try {
+      const { data: profiles, error } = await supabase
         .from('safe_public_profiles')
-        .select('name, avatar_url')
-        .eq('id', senderId)
-        .single();
+        .select('id, name, avatar_url')
+        .in('id', newSenderIds);
         
-      return { id: senderId, profile: data };
-    });
-
-    const profiles = await Promise.all(profilePromises);
-    const newProfiles: {[key: string]: {name: string, avatar_url?: string}} = {};
-    
-    profiles.forEach((p) => {
-      if (p && p.profile) {
-        newProfiles[p.id] = p.profile;
+      if (error) {
+        console.error('Error fetching sender profiles:', error);
+        return;
       }
-    });
+      
+      const newProfiles: {[key: string]: {name: string, avatar_url?: string}} = {};
+      
+      profiles?.forEach((profile) => {
+        if (profile) {
+          newProfiles[profile.id] = {
+            name: profile.name || 'অজানা ব্যবহারকারী',
+            avatar_url: profile.avatar_url
+          };
+        }
+      });
 
-    setSenderProfiles(prev => ({ ...prev, ...newProfiles }));
+      setSenderProfiles(prev => ({ ...prev, ...newProfiles }));
+    } catch (error) {
+      console.error('Error in loadSenderProfiles:', error);
+    }
   }, [messages, user?.id, senderProfiles]);
 
   useEffect(() => {
@@ -134,7 +140,7 @@ const ChatWindow = ({
             const isCurrentUser = message.sender_id === user?.id;
             const senderProfile = isCurrentUser 
               ? { name: profile?.name || 'আপনি', avatar_url: profile?.avatar_url }
-              : senderProfiles[message.sender_id] || { name: receiverName };
+              : (senderProfiles[message.sender_id] || { name: 'অজানা ব্যবহারকারী' });
 
             return (
               <div
@@ -154,7 +160,7 @@ const ChatWindow = ({
                         onClick={() => navigate(`/profile/${message.sender_id}`)}
                         className="text-xs font-medium text-primary hover:underline"
                       >
-                        {senderProfile.name || 'Unknown User'}
+                        {senderProfile.name || 'অজানা ব্যবহারকারী'}
                       </button>
                     </div>
                   )}
