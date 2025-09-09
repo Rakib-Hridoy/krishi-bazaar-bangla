@@ -29,7 +29,6 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { getProductById, getRelatedProducts } from '@/hooks/useProducts';
 import { useProductBids } from '@/hooks/useBids';
-import { useBidStats } from '@/hooks/useBidStats';
 import { hasAcceptedBid } from '@/backend/services/bidService';
 import { Product } from '@/types';
 import ProductCard from '@/components/ProductCard';
@@ -54,7 +53,6 @@ const ProductDetails = () => {
   const [isBiddingExpired, setIsBiddingExpired] = useState(false);
   
   const { bids, isLoading: loadingBids, addBid, updateBidStatus } = useProductBids(id);
-  const { stats: bidStats, isLoading: loadingStats } = useBidStats(id);
   
   useEffect(() => {
     const fetchProduct = async () => {
@@ -309,24 +307,6 @@ const ProductDetails = () => {
                     মোট পরিমাণ: {product.quantity} {product.unit}
                   </p>
                 </div>
-                
-                {/* Average Bid Display */}
-                {!loadingStats && bidStats.totalBids > 0 && (
-                  <div className="bg-blue-50 p-4 rounded-md">
-                    <h3 className="text-sm font-medium text-blue-900 mb-2">বিড পরিসংখ্যান</h3>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <p className="text-blue-700">গড় বিড</p>
-                        <p className="font-bold text-blue-900">৳{bidStats.averageAmount}</p>
-                      </div>
-                      <div>
-                        <p className="text-blue-700">মোট বিড</p>
-                        <p className="font-bold text-blue-900">{bidStats.totalBids}টি</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
                 <div className="flex flex-wrap gap-2">
                   {isAuthenticated && profile?.role === 'buyer' && user?.id !== product.sellerId && !isBiddingExpired && (
                     <Dialog open={bidDialogOpen} onOpenChange={setBidDialogOpen}>
@@ -338,13 +318,8 @@ const ProductDetails = () => {
                       <DialogContent>
                         <DialogHeader>
                           <DialogTitle>বিড করুন</DialogTitle>
-                          <DialogDescription>
+                            <DialogDescription>
                             "{product.title}" পণ্যটির জন্য আপনার দাম প্রস্তাব দিন। বর্তমান দামঃ ৳{product.price}/{product.unit}
-                            {bidStats.totalBids > 0 && (
-                              <span className="block mt-2 text-blue-600">
-                                গড় বিডঃ ৳{bidStats.averageAmount} ({bidStats.totalBids}টি বিড থেকে)
-                              </span>
-                            )}
                           </DialogDescription>
                         </DialogHeader>
                         
@@ -449,7 +424,7 @@ const ProductDetails = () => {
                 <p className="text-center py-4">বিড লোড হচ্ছে...</p>
               ) : bids.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {bids.map(bid => (
+                  {bids.sort((a, b) => b.amount - a.amount).map(bid => (
                     <Card key={bid.id}>
                       <CardContent className="p-6">
                         <div className="flex justify-between items-center mb-4">
