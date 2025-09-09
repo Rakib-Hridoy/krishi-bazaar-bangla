@@ -109,8 +109,8 @@ export function useProducts(categoryFilter: string = 'all', searchQuery: string 
           images: productData.images,
           video_url: productData.videoUrl,
           category: productData.category,
-          bidding_start_time: fromZonedTime(new Date(productData.biddingStartTime), 'Asia/Dhaka').toISOString(),
-          bidding_deadline: fromZonedTime(new Date(productData.biddingDeadline), 'Asia/Dhaka').toISOString(),
+          bidding_start_time: `${productData.biddingStartTime}:00+06:00`,
+          bidding_deadline: `${productData.biddingDeadline}:00+06:00`,
           seller_id: productData.sellerId
         })
         .select('*');

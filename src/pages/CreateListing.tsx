@@ -246,8 +246,8 @@ const CreateListing = () => {
           images,
           video_url: videoUrl || null,
           category,
-          bidding_start_time: fromZonedTime(new Date(biddingStartTime), 'Asia/Dhaka').toISOString(),
-          bidding_deadline: fromZonedTime(new Date(biddingDeadline), 'Asia/Dhaka').toISOString(),
+          bidding_start_time: `${biddingStartTime}:00+06:00`,
+          bidding_deadline: `${biddingDeadline}:00+06:00`,
           seller_id: user.id
         })
         .select();
