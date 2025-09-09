@@ -23,10 +23,10 @@ export async function getUserReviews(userId: string): Promise<Review[]> {
       throw reviewsError;
     }
     
-    // Fetch user names in a separate query
+    // Fetch user names from safe_public_profiles
     const userIds = reviewsData.map(review => review.from_user_id);
     const { data: usersData, error: usersError } = await supabase
-      .from('profiles')
+      .from('safe_public_profiles')
       .select('id, name')
       .in('id', userIds);
       
@@ -101,10 +101,10 @@ export async function getReviewsByUser(userId: string): Promise<Review[]> {
       throw reviewsError;
     }
     
-    // Fetch user names in a separate query
+    // Fetch user names from safe_public_profiles
     const userIds = reviewsData.map(review => review.to_user_id);
     const { data: usersData, error: usersError } = await supabase
-      .from('profiles')
+      .from('safe_public_profiles')
       .select('id, name')
       .in('id', userIds);
       
