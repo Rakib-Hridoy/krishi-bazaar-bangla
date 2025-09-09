@@ -377,6 +377,7 @@ export type Database = {
       products: {
         Row: {
           bidding_deadline: string
+          bidding_start_time: string | null
           category: string
           created_at: string | null
           description: string | null
@@ -393,6 +394,7 @@ export type Database = {
         }
         Insert: {
           bidding_deadline?: string
+          bidding_start_time?: string | null
           category: string
           created_at?: string | null
           description?: string | null
@@ -409,6 +411,7 @@ export type Database = {
         }
         Update: {
           bidding_deadline?: string
+          bidding_start_time?: string | null
           category?: string
           created_at?: string | null
           description?: string | null
