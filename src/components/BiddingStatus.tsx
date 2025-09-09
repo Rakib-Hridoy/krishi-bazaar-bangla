@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { toZonedTime } from 'date-fns-tz';
+import { format } from 'date-fns';
 
 interface BiddingStatusProps {
   startTime?: string;
@@ -29,12 +30,17 @@ export default function BiddingStatus({ startTime, deadline }: BiddingStatusProp
           const hours = Math.floor((timeToStart % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
           const minutes = Math.floor((timeToStart % (1000 * 60 * 60)) / (1000 * 60));
           
+          // Show exact start time instead of relative time for better clarity
+          const startTimeFormatted = format(startDate, 'HH:mm');
+          
           if (days > 0) {
-            setTimeLeft(`${days} দিন ${hours} ঘন্টা পর`);
+            setTimeLeft(`${startTimeFormatted} (${days} দিন পর)`);
           } else if (hours > 0) {
-            setTimeLeft(`${hours} ঘন্টা ${minutes} মিনিট পর`);
+            setTimeLeft(`${startTimeFormatted} (${hours} ঘন্টা ${minutes} মিনিট পর)`);
+          } else if (minutes > 0) {
+            setTimeLeft(`${startTimeFormatted} (${minutes} মিনিট পর)`);
           } else {
-            setTimeLeft(`${minutes} মিনিট পর`);
+            setTimeLeft(`${startTimeFormatted} (শীঘ্রই)`);
           }
           setStatus('not_started');
           return;
