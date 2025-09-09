@@ -78,9 +78,22 @@ const ProductDetails = () => {
             setIsBiddingExpired(now > deadline);
           }
           
-          if (user && user.id !== productData.sellerId) {
-            const hasAccepted = await hasAcceptedBid(user.id, productData.id);
-            setCanMessage(hasAccepted);
+          if (user) {
+            // Check for confirmed bids - both buyer and seller can message after confirmation
+            const { data: confirmedBids } = await supabase
+              .from('bids')
+              .select('buyer_id, status')
+              .eq('product_id', productData.id)
+              .eq('status', 'confirmed');
+              
+            if (user.id !== productData.sellerId) {
+              // Buyer can message if they have confirmed bid
+              const hasConfirmed = confirmedBids?.some(bid => bid.buyer_id === user.id);
+              setCanMessage(hasConfirmed || false);
+            } else {
+              // Seller can message if any buyer has confirmed
+              setCanMessage(confirmedBids && confirmedBids.length > 0);
+            }
           }
         }
       } catch (error) {
@@ -98,7 +111,7 @@ const ProductDetails = () => {
     fetchProduct();
   }, [id, toast, user]);
 
-  // Realtime: when this buyer's bid gets accepted, enable messaging instantly
+  // Realtime: when bid is confirmed, enable messaging for both buyer and seller
   useEffect(() => {
     if (!user || !id) return;
 
@@ -109,8 +122,11 @@ const ProductDetails = () => {
         { event: 'UPDATE', schema: 'public', table: 'bids', filter: `product_id=eq.${id}` },
         (payload) => {
           const newRow = payload.new as { buyer_id: string; status: string };
-          if (newRow && newRow.buyer_id === user.id && (newRow.status === 'accepted' || newRow.status === 'won')) {
-            setCanMessage(true);
+          if (newRow && newRow.status === 'confirmed') {
+            // Enable messaging for both buyer and seller when bid is confirmed
+            if (newRow.buyer_id === user.id || user.id === product?.sellerId) {
+              setCanMessage(true);
+            }
           }
         }
       )
@@ -119,7 +135,7 @@ const ProductDetails = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.id, id]);
+  }, [user?.id, id, product?.sellerId]);
 
   const handleBidSubmit = async () => {
     if (!isAuthenticated) {
@@ -349,7 +365,7 @@ const ProductDetails = () => {
                       className="opacity-50 cursor-not-allowed"
                     >
                       <MessageCircle className="h-4 w-4 mr-1" />
-                      নিলাম জিতলে মেসেজ করুন
+                      নিলাম confirmed করার পর মেসেজ করুন
                     </Button>
                   )}
                   

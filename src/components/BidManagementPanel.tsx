@@ -42,19 +42,15 @@ export function BidManagementPanel() {
     }
   };
 
-  const handleStatusUpdate = async (bidId: string, newStatus: 'accepted' | 'rejected' | 'completed') => {
+  // Manual bid acceptance/rejection removed - bids are now processed automatically when auction ends
+
+  const handleStatusUpdate = async (bidId: string, newStatus: 'completed') => {
     setActionLoading(bidId);
     try {
       await updateBidStatus(bidId, newStatus);
       
-      const statusMessages = {
-        accepted: "বিড গৃহীত হয়েছে",
-        rejected: "বিড প্রত্যাখ্যান করা হয়েছে", 
-        completed: "লেনদেন সম্পন্ন হয়েছে"
-      };
-      
       toast({
-        title: statusMessages[newStatus],
+        title: "লেনদেন সম্পন্ন হয়েছে",
         description: "বিডের স্ট্যাটাস সফলভাবে আপডেট করা হয়েছে।"
       });
       
@@ -73,7 +69,7 @@ export function BidManagementPanel() {
   const getStatusBadge = (status: string) => {
     const badges = {
       pending: <Badge variant="outline" className="bg-gray-50 text-gray-700">অপেক্ষমান</Badge>,
-      accepted: <Badge variant="outline" className="bg-yellow-50 text-yellow-700">গৃহীত</Badge>,
+      won: <Badge variant="outline" className="bg-yellow-50 text-yellow-700">জয়ী</Badge>,
       rejected: <Badge variant="outline" className="bg-red-50 text-red-700">প্রত্যাখ্যাত</Badge>,
       confirmed: <Badge variant="outline" className="bg-green-50 text-green-700">নিশ্চিত</Badge>,
       completed: <Badge variant="outline" className="bg-blue-50 text-blue-700">সম্পন্ন</Badge>,
@@ -127,47 +123,30 @@ export function BidManagementPanel() {
             </div>
           </div>
 
-          {bid.status === 'accepted' && timeRemaining && (
+          {bid.status === 'won' && timeRemaining && (
             <div className={`p-2 rounded text-sm mb-3 ${isExpired ? 'bg-red-50 text-red-700' : 'bg-yellow-50 text-yellow-700'}`}>
               <Clock className="w-4 h-4 inline mr-1" />
               নিশ্চিতকরণের সময়সীমা: {timeRemaining}
             </div>
           )}
 
-          <div className="flex gap-2">
-            {bid.status === 'pending' && (
-              <>
-                <Button 
-                  onClick={() => handleStatusUpdate(bid.id, 'accepted')}
-                  disabled={actionLoading === bid.id}
-                  size="sm"
-                  className="flex-1"
-                >
-                  গ্রহণ করুন
-                </Button>
-                <Button 
-                  onClick={() => handleStatusUpdate(bid.id, 'rejected')}
-                  disabled={actionLoading === bid.id}
-                  variant="outline" 
-                  size="sm"
-                  className="flex-1"
-                >
-                  প্রত্যাখ্যান করুন
-                </Button>
-              </>
-            )}
-            
-            {bid.status === 'confirmed' && (
-              <Button 
-                onClick={() => handleStatusUpdate(bid.id, 'completed')}
-                disabled={actionLoading === bid.id}
-                size="sm"
-                className="w-full"
-              >
-                লেনদেন সম্পন্ন করুন
-              </Button>
-            )}
+          <div className="text-sm text-muted-foreground mb-3">
+            {bid.status === 'pending' && 'নিলাম শেষে স্বয়ংক্রিয়ভাবে নির্ধারিত হবে'}
+            {bid.status === 'won' && 'নিলাম জয়ী - ক্রেতার নিশ্চিতকরণের অপেক্ষায়'}
+            {bid.status === 'confirmed' && 'ক্রেতা নিশ্চিত করেছে - যোগাযোগ করুন'}
+            {bid.status === 'completed' && 'লেনদেন সম্পন্ন'}
           </div>
+            
+          {bid.status === 'confirmed' && (
+            <Button 
+              onClick={() => handleStatusUpdate(bid.id, 'completed')}
+              disabled={actionLoading === bid.id}
+              size="sm"
+              className="w-full"
+            >
+              লেনদেন সম্পন্ন করুন
+            </Button>
+          )}
         </CardContent>
       </Card>
     );
@@ -185,7 +164,7 @@ export function BidManagementPanel() {
   }
 
   const pendingBids = filterBids(['pending']);
-  const activeBids = filterBids(['accepted', 'confirmed']);
+  const activeBids = filterBids(['won', 'confirmed']);
   const completedBids = filterBids(['completed', 'rejected', 'abandoned']);
 
   return (
