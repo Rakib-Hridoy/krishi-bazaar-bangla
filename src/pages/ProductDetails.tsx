@@ -424,72 +424,72 @@ const ProductDetails = () => {
             </div>
           </div>
           
-          {/* Public Bids Section - Everyone can see all bids */}
-          <div className="mt-12">
-            <h2 className="text-2xl font-bold mb-6">সকল বিডসমূহ</h2>
-            
-            {loadingBids ? (
-              <p className="text-center py-4">বিড লোড হচ্ছে...</p>
-            ) : bids.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {bids.map(bid => (
-                  <Card key={bid.id}>
-                    <CardContent className="p-6">
-                      <div className="flex justify-between items-center mb-4">
-                        <div>
-                          <Link to={`/profile/${bid.buyerId}`} className="font-medium hover:underline">
-                            {bid.buyerName}
-                          </Link>
-                          <p className="text-sm text-muted-foreground">
-                            {new Date(bid.createdAt).toLocaleDateString('bn-BD')}
+          {/* Bids Section (Only visible to the seller) */}
+          {isAuthenticated && user?.id === product.sellerId && (
+            <div className="mt-12">
+              <h2 className="text-2xl font-bold mb-6">বিডসমূহ</h2>
+              
+              {loadingBids ? (
+                <p className="text-center py-4">বিড লোড হচ্ছে...</p>
+              ) : bids.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {bids.map(bid => (
+                    <Card key={bid.id}>
+                      <CardContent className="p-6">
+                        <div className="flex justify-between items-center mb-4">
+                          <div>
+                            <Link to={`/profile/${bid.buyerId}`} className="font-medium hover:underline">
+                              {bid.buyerName}
+                            </Link>
+                            <p className="text-sm text-muted-foreground">
+                              {new Date(bid.createdAt).toLocaleDateString('bn-BD')}
+                            </p>
+                          </div>
+                          <p className="text-lg font-bold text-agriculture-green-dark">
+                            ৳{bid.amount}
                           </p>
                         </div>
-                        <div className="text-right">
-                          <p className="text-lg font-bold text-agriculture-green-dark">৳{bid.amount}</p>
-                          <span className={`text-xs px-2 py-1 rounded-full ${
-                            bid.status === 'accepted' 
-                              ? 'bg-green-100 text-green-800' 
-                              : bid.status === 'rejected'
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {bid.status === 'accepted' ? 'গৃহীত' : bid.status === 'rejected' ? 'প্রত্যাখ্যাত' : 'অপেক্ষমান'}
-                          </span>
-                        </div>
-                      </div>
-                      
-                      {/* Only show accept/reject buttons to the seller */}
-                      {isAuthenticated && user?.id === product.sellerId && bid.status === 'pending' && (
-                        <div className="flex space-x-2">
-                          <Button 
-                            className="flex-1 bg-agriculture-green-dark hover:bg-agriculture-green-light" 
-                            size="sm"
-                            onClick={() => handleAcceptBid(bid.id)}
-                          >
-                            গ্রহণ করুন
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="flex-1"
-                            onClick={() => handleRejectBid(bid.id)}
-                          >
-                            প্রত্যাখ্যান করুন
-                          </Button>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <Card>
-                <CardContent className="p-6 text-center">
-                  <p className="text-muted-foreground">এখনো কোন বিড করা হয়নি।</p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+                        
+                        {bid.status === 'pending' ? (
+                          <div className="flex space-x-2">
+                            <Button 
+                              className="flex-1 bg-agriculture-green-dark hover:bg-agriculture-green-light" 
+                              size="sm"
+                              onClick={() => handleAcceptBid(bid.id)}
+                            >
+                              গ্রহণ করুন
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="flex-1"
+                              onClick={() => handleRejectBid(bid.id)}
+                            >
+                              প্রত্যাখ্যান করুন
+                            </Button>
+                          </div>
+                        ) : bid.status === 'accepted' ? (
+                          <div className="bg-green-100 text-green-800 py-2 px-3 rounded text-center">
+                            গৃহীত
+                          </div>
+                        ) : (
+                          <div className="bg-red-100 text-red-800 py-2 px-3 rounded text-center">
+                            প্রত্যাখ্যাত
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <Card>
+                  <CardContent className="p-6 text-center">
+                    <p className="text-muted-foreground">এখনো কোন বিড করা হয়নি।</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
           
           {/* Related Products */}
           <div className="mt-12">

@@ -19,7 +19,7 @@ export async function getProducts(categoryFilter: string = 'all', searchQuery: s
         category,
         created_at,
         seller_id,
-        safe_public_profiles(name)
+        profiles(name)
       `)
       .order('created_at', { ascending: false });
 
@@ -43,9 +43,9 @@ export async function getProducts(categoryFilter: string = 'all', searchQuery: s
     }
 
     return data.map(item => {
-      // Safely access the seller name from the safe_public_profiles array
-      const sellerName = Array.isArray(item.safe_public_profiles) && item.safe_public_profiles.length > 0 && item.safe_public_profiles[0]?.name 
-        ? item.safe_public_profiles[0].name 
+      // Safely access the seller name from the profiles array
+      const sellerName = Array.isArray(item.profiles) && item.profiles.length > 0 && item.profiles[0]?.name 
+        ? item.profiles[0].name 
         : 'অজানা বিক্রেতা';
         
       return {
@@ -86,7 +86,7 @@ export async function getProductById(id: string): Promise<Product | null> {
         category,
         created_at,
         seller_id,
-        safe_public_profiles(name, avatar_url)
+        profiles(name, email, phone, address, avatar_url)
       `)
       .eq('id', id)
       .single();
@@ -100,9 +100,9 @@ export async function getProductById(id: string): Promise<Product | null> {
     // Log the data structure
     console.log('Product by ID data structure:', JSON.stringify(data, null, 2));
     
-    // Safely access the seller name from the safe_public_profiles array
-    const sellerName = Array.isArray(data.safe_public_profiles) && data.safe_public_profiles.length > 0 && data.safe_public_profiles[0]?.name 
-      ? data.safe_public_profiles[0].name 
+    // Safely access the seller name from the profiles array
+    const sellerName = Array.isArray(data.profiles) && data.profiles.length > 0 && data.profiles[0]?.name 
+      ? data.profiles[0].name 
       : 'অজানা বিক্রেতা';
 
     return {
@@ -142,7 +142,7 @@ export async function getProductsByUserId(userId: string): Promise<Product[]> {
         category,
         created_at,
         seller_id,
-        safe_public_profiles(name)
+        profiles(name)
       `)
       .eq('seller_id', userId)
       .order('created_at', { ascending: false });
@@ -152,9 +152,9 @@ export async function getProductsByUserId(userId: string): Promise<Product[]> {
     }
 
     return data.map(item => {
-      // Safely access the seller name from the safe_public_profiles array
-      const sellerName = Array.isArray(item.safe_public_profiles) && item.safe_public_profiles.length > 0 && item.safe_public_profiles[0]?.name 
-        ? item.safe_public_profiles[0].name 
+      // Safely access the seller name from the profiles array
+      const sellerName = Array.isArray(item.profiles) && item.profiles.length > 0 && item.profiles[0]?.name 
+        ? item.profiles[0].name 
         : 'অজানা বিক্রেতা';
         
       return {
@@ -241,7 +241,7 @@ export async function getRelatedProducts(productId: string, category: string, li
         category,
         created_at,
         seller_id,
-        safe_public_profiles(name)
+        profiles(name)
       `)
       .eq('category', category)
       .neq('id', productId) // Exclude current product
@@ -253,9 +253,9 @@ export async function getRelatedProducts(productId: string, category: string, li
     }
 
     return data.map(item => {
-      // Safely access the seller name from the safe_public_profiles array
-      const sellerName = Array.isArray(item.safe_public_profiles) && item.safe_public_profiles.length > 0 && item.safe_public_profiles[0]?.name 
-        ? item.safe_public_profiles[0].name 
+      // Safely access the seller name from the profiles array
+      const sellerName = Array.isArray(item.profiles) && item.profiles.length > 0 && item.profiles[0]?.name 
+        ? item.profiles[0].name 
         : 'অজানা বিক্রেতা';
         
       return {

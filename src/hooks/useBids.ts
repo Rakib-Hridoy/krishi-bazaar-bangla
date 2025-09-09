@@ -37,10 +37,10 @@ export function useProductBids(productId?: string) {
           throw bidsError;
         }
         
-        // Get buyer names from safe_public_profiles table
+        // Get buyer names from profiles table
         const buyerIds = bidsData.map(bid => bid.buyer_id);
         const { data: buyersData, error: buyersError } = await supabase
-          .from('safe_public_profiles')
+          .from('profiles')
           .select('id, name')
           .in('id', buyerIds);
           
@@ -257,10 +257,10 @@ export async function getSellerReceivedBids(sellerId: string): Promise<Bid[]> {
       throw bidsError;
     }
     
-    // Get buyer names from safe_public_profiles
+    // Get buyer names
     const buyerIds = bidsData.map(bid => bid.buyer_id);
     const { data: buyersData, error: buyersError } = await supabase
-      .from('safe_public_profiles')
+      .from('profiles')
       .select('id, name')
       .in('id', buyerIds);
       

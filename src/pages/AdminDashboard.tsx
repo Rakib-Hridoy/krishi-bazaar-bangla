@@ -129,19 +129,12 @@ const UserManagement = () => {
 
   const deleteUser = async (userId: string) => {
     try {
-      // First delete from auth.users using RPC function (if exists) 
-      // or delete from profiles table which should cascade
-      const { error } = await supabase.auth.admin.deleteUser(userId);
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId);
       
-      if (error) {
-        // If admin delete fails, try profiles table delete
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .delete()
-          .eq('id', userId);
-        
-        if (profileError) throw profileError;
-      }
+      if (error) throw error;
       
       setUsers(prevUsers => prevUsers.filter(user => user.id !== userId));
       
@@ -153,7 +146,6 @@ const UserManagement = () => {
       console.error('Error deleting user:', error);
       toast({
         title: "ব্যবহারকারী মুছতে সমস্যা",
-        description: "এডমিন ড্যাশবোর্ড থেকে ইউজার ডিলিট করার জন্য সুপারএডমিন অ্যাক্সেস প্রয়োজন।",
         variant: "destructive"
       });
     }
