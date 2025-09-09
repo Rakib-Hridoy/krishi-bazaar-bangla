@@ -36,6 +36,7 @@ import ProductCard from '@/components/ProductCard';
 import BiddingStatus from '@/components/BiddingStatus';
 import ChatWindow from '@/components/ChatWindow';
 import { supabase } from '@/integrations/supabase/client';
+import { toZonedTime } from 'date-fns-tz';
 
 const ProductDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -72,8 +73,8 @@ const ProductDetails = () => {
           
           // Check bidding expiry and messaging permission
           if (productData.biddingDeadline) {
-            const deadline = new Date(productData.biddingDeadline);
-            const now = new Date();
+            const deadline = toZonedTime(new Date(productData.biddingDeadline), 'Asia/Dhaka');
+            const now = toZonedTime(new Date(), 'Asia/Dhaka');
             setIsBiddingExpired(now > deadline);
           }
           

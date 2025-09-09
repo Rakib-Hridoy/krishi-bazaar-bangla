@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { toZonedTime } from 'date-fns-tz';
 
 interface BiddingStatusProps {
   startTime?: string;
@@ -15,12 +16,12 @@ export default function BiddingStatus({ startTime, deadline }: BiddingStatusProp
     if (!deadline) return;
 
     const updateStatus = () => {
-      const now = new Date();
-      const deadlineDate = new Date(deadline);
+      const now = toZonedTime(new Date(), 'Asia/Dhaka');
+      const deadlineDate = toZonedTime(new Date(deadline), 'Asia/Dhaka');
       
       // Check if bidding has started
       if (startTime) {
-        const startDate = new Date(startTime);
+        const startDate = toZonedTime(new Date(startTime), 'Asia/Dhaka');
         if (now < startDate) {
           // Bidding hasn't started yet
           const timeToStart = startDate.getTime() - now.getTime();

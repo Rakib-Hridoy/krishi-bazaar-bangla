@@ -6,6 +6,7 @@ import { Trophy, Clock, MessageCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Bid } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
+import { toZonedTime } from 'date-fns-tz';
 
 interface WinnerConfirmationProps {
   bid: Bid;
@@ -48,8 +49,8 @@ export default function WinnerConfirmation({ bid, onStatusUpdate }: WinnerConfir
   const getTimeRemaining = () => {
     if (!bid.confirmationDeadline) return 'সময়সীমা নেই';
     
-    const deadline = new Date(bid.confirmationDeadline);
-    const now = new Date();
+    const deadline = toZonedTime(new Date(bid.confirmationDeadline), 'Asia/Dhaka');
+    const now = toZonedTime(new Date(), 'Asia/Dhaka');
     const timeDiff = deadline.getTime() - now.getTime();
     
     if (timeDiff <= 0) {
@@ -75,7 +76,7 @@ export default function WinnerConfirmation({ bid, onStatusUpdate }: WinnerConfir
     }
   };
 
-  const isExpired = bid.confirmationDeadline && new Date() > new Date(bid.confirmationDeadline);
+  const isExpired = bid.confirmationDeadline && toZonedTime(new Date(), 'Asia/Dhaka') > toZonedTime(new Date(bid.confirmationDeadline), 'Asia/Dhaka');
 
   return (
     <Card className="border-2 border-amber-200 shadow-lg">

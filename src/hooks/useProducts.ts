@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/types';
 import { toast } from '@/components/ui/use-toast';
+import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 
 export function useProducts(categoryFilter: string = 'all', searchQuery: string = '') {
   const [products, setProducts] = useState<Product[]>([]);
@@ -108,8 +109,8 @@ export function useProducts(categoryFilter: string = 'all', searchQuery: string 
           images: productData.images,
           video_url: productData.videoUrl,
           category: productData.category,
-          bidding_start_time: new Date(productData.biddingStartTime).toISOString(),
-          bidding_deadline: new Date(productData.biddingDeadline).toISOString(),
+          bidding_start_time: fromZonedTime(new Date(productData.biddingStartTime), 'Asia/Dhaka').toISOString(),
+          bidding_deadline: fromZonedTime(new Date(productData.biddingDeadline), 'Asia/Dhaka').toISOString(),
           seller_id: productData.sellerId
         })
         .select('*');
