@@ -28,8 +28,7 @@ export function useProducts(categoryFilter: string = 'all', searchQuery: string 
             category,
             created_at,
             bidding_deadline,
-            seller_id,
-            profiles:seller_id (name)
+            seller_id
           `)
           .order('created_at', { ascending: false });
 
@@ -42,12 +41,23 @@ export function useProducts(categoryFilter: string = 'all', searchQuery: string 
         }
 
         const { data, error } = await query;
-
         if (error) {
           throw error;
         }
 
-        const formattedProducts: Product[] = data.map(item => ({
+        const sellerIds = Array.from(new Set((data ?? []).map((d: any) => d.seller_id).filter(Boolean)));
+        let sellerMap = new Map<string, string>();
+        if (sellerIds.length) {
+          const { data: sellers } = await supabase
+            .from('safe_public_profiles')
+            .select('id, name')
+            .in('id', sellerIds as string[]);
+          if (sellers) {
+            sellerMap = new Map(sellers.map((s: any) => [s.id, s.name || 'অজানা বিক্রেতা']));
+          }
+        }
+
+        const formattedProducts: Product[] = (data ?? []).map((item: any) => ({
           id: item.id,
           title: item.title,
           description: item.description || '',
@@ -57,7 +67,7 @@ export function useProducts(categoryFilter: string = 'all', searchQuery: string 
           location: item.location,
           images: item.images || [],
           sellerId: item.seller_id,
-          sellerName: item.profiles?.name || 'অজানা বিক্রেতা',
+          sellerName: sellerMap.get(item.seller_id) ?? 'অজানা বিক্রেতা',
           createdAt: item.created_at,
           category: item.category,
           biddingDeadline: item.bidding_deadline
