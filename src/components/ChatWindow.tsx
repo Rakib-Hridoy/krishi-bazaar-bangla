@@ -36,6 +36,14 @@ const ChatWindow = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Seed receiver profile so their name shows immediately
+    setSenderProfiles(prev => ({
+      ...prev,
+      [receiverId]: { name: receiverName, avatar_url: receiverAvatar }
+    }));
+  }, [receiverId, receiverName, receiverAvatar]);
+
+  useEffect(() => {
     fetchMessages(receiverId);
     checkMessagePermission();
   }, [receiverId, fetchMessages]);
