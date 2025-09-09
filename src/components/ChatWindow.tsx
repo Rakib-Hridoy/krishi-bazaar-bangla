@@ -148,7 +148,7 @@ const ChatWindow = ({
             const isCurrentUser = message.sender_id === user?.id;
             const senderProfile = isCurrentUser 
               ? { name: profile?.name || 'আপনি', avatar_url: profile?.avatar_url }
-              : (senderProfiles[message.sender_id] || { name: 'অজানা ব্যবহারকারী' });
+              : { name: receiverName, avatar_url: receiverAvatar };
 
             return (
               <div
