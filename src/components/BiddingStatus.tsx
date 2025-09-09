@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { toZonedTime } from 'date-fns-tz';
-import { format } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz/formatInTimeZone';
 
 interface BiddingStatusProps {
   startTime?: string;
@@ -31,7 +31,7 @@ export default function BiddingStatus({ startTime, deadline }: BiddingStatusProp
           const minutes = Math.floor((timeToStart % (1000 * 60 * 60)) / (1000 * 60));
           
           // Show exact start time instead of relative time for better clarity
-          const startTimeFormatted = format(startDate, 'HH:mm');
+          const startTimeFormatted = formatInTimeZone(startDate, 'Asia/Dhaka', 'HH:mm');
           
           if (days > 0) {
             setTimeLeft(`${startTimeFormatted} (${days} দিন পর)`);
