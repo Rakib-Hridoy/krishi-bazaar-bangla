@@ -16,8 +16,11 @@ export type Database = {
     Tables: {
       bids: {
         Row: {
+          abandoned_at: string | null
           amount: number
           buyer_id: string
+          confirmation_deadline: string | null
+          confirmed_at: string | null
           created_at: string | null
           id: string
           product_id: string
@@ -25,8 +28,11 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          abandoned_at?: string | null
           amount: number
           buyer_id: string
+          confirmation_deadline?: string | null
+          confirmed_at?: string | null
           created_at?: string | null
           id?: string
           product_id: string
@@ -34,8 +40,11 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          abandoned_at?: string | null
           amount?: number
           buyer_id?: string
+          confirmation_deadline?: string | null
+          confirmed_at?: string | null
           created_at?: string | null
           id?: string
           product_id?: string
@@ -306,9 +315,12 @@ export type Database = {
         Row: {
           address: string | null
           avatar_url: string | null
+          bid_abandonment_count: number | null
+          bid_suspension_until: string | null
           created_at: string | null
           email: string
           id: string
+          last_abandonment_at: string | null
           name: string
           phone: string | null
           role: string
@@ -317,9 +329,12 @@ export type Database = {
         Insert: {
           address?: string | null
           avatar_url?: string | null
+          bid_abandonment_count?: number | null
+          bid_suspension_until?: string | null
           created_at?: string | null
           email: string
           id: string
+          last_abandonment_at?: string | null
           name: string
           phone?: string | null
           role: string
@@ -328,9 +343,12 @@ export type Database = {
         Update: {
           address?: string | null
           avatar_url?: string | null
+          bid_abandonment_count?: number | null
+          bid_suspension_until?: string | null
           created_at?: string | null
           email?: string
           id?: string
+          last_abandonment_at?: string | null
           name?: string
           phone?: string | null
           role?: string
@@ -422,6 +440,14 @@ export type Database = {
       }
     }
     Functions: {
+      abandon_expired_bids: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      can_user_bid: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
       cleanup_expired_products: {
         Args: Record<PropertyKey, never>
         Returns: number

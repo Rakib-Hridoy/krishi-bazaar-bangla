@@ -9,37 +9,15 @@ import { User } from '@/types';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
+import { AdminBidMonitoring } from '@/components/AdminBidMonitoring';
+
 const AdminDashboard = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
       <main className="flex-1 container mx-auto py-12 px-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="col-span-1">
-            <Card>
-              <CardHeader>
-                <CardTitle>ব্যবহারকারী ব্যবস্থাপনা</CardTitle>
-                <CardDescription>ব্যবহারকারীদের তালিকা দেখুন এবং পরিচালনা করুন</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <UserManagement />
-              </CardContent>
-            </Card>
-          </div>
-          
-          <div className="col-span-1">
-            <Card>
-              <CardHeader>
-                <CardTitle>পণ্য পর্যালোচনা</CardTitle>
-                <CardDescription>পণ্য পর্যালোচনা এবং অনুমোদন করুন</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ProductReview />
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+        <AdminBidMonitoring />
       </main>
       
       <Footer />

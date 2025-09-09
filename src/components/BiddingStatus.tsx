@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 
 interface BiddingStatusProps {
   startTime?: string;
