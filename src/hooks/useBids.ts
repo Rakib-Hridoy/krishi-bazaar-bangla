@@ -60,7 +60,7 @@ export function useProductBids(productId?: string) {
           buyerId: item.buyer_id,
           buyerName: buyerMap.get(item.buyer_id) || 'অজানা ব্যবহারকারী',
           amount: Number(item.amount),
-          status: item.status as 'pending' | 'accepted' | 'rejected' | 'confirmed' | 'completed' | 'abandoned',
+          status: item.status as 'pending' | 'accepted' | 'rejected' | 'confirmed' | 'completed' | 'abandoned' | 'won',
           createdAt: item.created_at
         }));
 
@@ -106,7 +106,7 @@ export function useProductBids(productId?: string) {
           buyerId: newBid.buyer_id,
           buyerName: 'আপনি', // This will be replaced on next fetch
           amount: Number(newBid.amount),
-          status: newBid.status as 'pending' | 'accepted' | 'rejected' | 'confirmed' | 'completed' | 'abandoned',
+          status: newBid.status as 'pending' | 'accepted' | 'rejected' | 'confirmed' | 'completed' | 'abandoned' | 'won',
           createdAt: newBid.created_at
         }, ...prev]);
       }
@@ -123,7 +123,7 @@ export function useProductBids(productId?: string) {
     }
   };
 
-  const updateBidStatus = async (bidId: string, status: 'accepted' | 'rejected' | 'confirmed' | 'completed' | 'abandoned') => {
+  const updateBidStatus = async (bidId: string, status: 'accepted' | 'rejected' | 'confirmed' | 'completed' | 'abandoned' | 'won') => {
     try {
       const { data, error } = await supabase
         .from('bids')

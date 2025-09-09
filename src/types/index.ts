@@ -23,7 +23,7 @@ export interface Bid {
   buyerId: string;
   buyerName: string;
   amount: number;
-  status: 'pending' | 'accepted' | 'rejected' | 'confirmed' | 'completed' | 'abandoned';
+  status: 'pending' | 'accepted' | 'rejected' | 'confirmed' | 'completed' | 'abandoned' | 'won';
   createdAt: string;
   confirmationDeadline?: string;
   confirmedAt?: string;

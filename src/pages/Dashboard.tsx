@@ -15,6 +15,7 @@ import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
 import { getProductsByUserId } from '@/hooks/useProducts';
 import { BidConfirmation } from '@/components/BidConfirmation';
+import WinnerConfirmation from '@/components/WinnerConfirmation';
 import { getUserBids, getSellerReceivedBids } from '@/backend/services/bidService';
 import { getUserReviews } from '@/hooks/useReviews';
 import { Product, Bid, Review } from '@/types';
@@ -166,11 +167,11 @@ const Dashboard = () => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                       <div className="text-2xl font-bold">
-                         {profile?.role === 'seller' 
-                           ? sellerBids.filter(bid => bid.status === 'pending').length
-                           : userBids.filter(bid => bid.status === 'accepted').length
-                         }
+                        <div className="text-2xl font-bold">
+                          {profile?.role === 'seller' 
+                            ? sellerBids.filter(bid => bid.status === 'pending').length
+                            : userBids.filter(bid => bid.status === 'won' || bid.status === 'accepted').length
+                          }
                       </div>
                     </CardContent>
                   </Card>
@@ -338,14 +339,16 @@ const BuyerBidsList = ({ bids }: { bids: Bid[] }) => {
               </Link>
               <span className={`px-2 py-1 text-xs rounded-full ${
                 bid.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                bid.status === 'won' ? 'bg-amber-100 text-amber-800' :
                 bid.status === 'accepted' ? 'bg-orange-100 text-orange-800' :
                 bid.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
                 bid.status === 'completed' ? 'bg-green-100 text-green-800' :
                 bid.status === 'abandoned' ? 'bg-red-100 text-red-800' :
                 'bg-red-100 text-red-800'
               }`}>
-                {bid.status === 'pending' ? 'অপেক্ষারত' : 
-                 bid.status === 'accepted' ? 'গৃহীত (নিশ্চিত করুন)' :
+                 {bid.status === 'pending' ? 'অপেক্ষারত' : 
+                  bid.status === 'won' ? 'জিতেছেন! (নিশ্চিত করুন)' :
+                  bid.status === 'accepted' ? 'গৃহীত (নিশ্চিত করুন)' :
                  bid.status === 'confirmed' ? 'নিশ্চিত' :
                  bid.status === 'completed' ? 'সম্পন্ন' :
                  bid.status === 'abandoned' ? 'পরিত্যক্ত' :

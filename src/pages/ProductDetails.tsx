@@ -23,6 +23,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/Navbar';
@@ -107,7 +108,7 @@ const ProductDetails = () => {
         { event: 'UPDATE', schema: 'public', table: 'bids', filter: `product_id=eq.${id}` },
         (payload) => {
           const newRow = payload.new as { buyer_id: string; status: string };
-          if (newRow && newRow.buyer_id === user.id && newRow.status === 'accepted') {
+          if (newRow && newRow.buyer_id === user.id && (newRow.status === 'accepted' || newRow.status === 'won')) {
             setCanMessage(true);
           }
         }
@@ -183,31 +184,8 @@ const ProductDetails = () => {
     }
   };
 
-  const handleAcceptBid = async (bidId: string) => {
-    if (!isAuthenticated || !product || user?.id !== product.sellerId) return;
-    
-    try {
-      await updateBidStatus(bidId, 'accepted');
-      
-      // Check if user can now message by refreshing the bid check
-      if (user) {
-        const hasAccepted = await hasAcceptedBid(user.id, product.id);
-        setCanMessage(hasAccepted);
-      }
-    } catch (error) {
-      console.error('Error accepting bid:', error);
-    }
-  };
-
-  const handleRejectBid = async (bidId: string) => {
-    if (!isAuthenticated || !product || user?.id !== product.sellerId) return;
-    
-    try {
-      await updateBidStatus(bidId, 'rejected');
-    } catch (error) {
-      console.error('Error rejecting bid:', error);
-    }
-  };
+  // Note: Bid acceptance is now automatic when auction ends
+  // Winners will be notified automatically
 
   const handleMessageClick = () => {
     setShowChat(true);
@@ -370,17 +348,19 @@ const ProductDetails = () => {
                       className="opacity-50 cursor-not-allowed"
                     >
                       <MessageCircle className="h-4 w-4 mr-1" />
-                      বিড এক্সেপ্ট প্রয়োজন
+                      নিলাম জিতলে মেসেজ করুন
                     </Button>
                   )}
                   
+                  {isBiddingExpired && (
                     <Button
                       variant="secondary"
                       disabled
                       className="opacity-60"
                     >
-                      বিডিং সময় শুরু হয়নি/শেষ
+                      বিডিং সময় শেষ
                     </Button>
+                  )}
                 </div>
               </div>
               
@@ -440,37 +420,15 @@ const ProductDetails = () => {
                         </div>
                         
                         {bid.status === 'pending' ? (
-                          isAuthenticated && user?.id === product.sellerId ? (
-                            <div className="flex space-x-2">
-                              <Button 
-                                className="flex-1 bg-agriculture-green-dark hover:bg-agriculture-green-light" 
-                                size="sm"
-                                onClick={() => handleAcceptBid(bid.id)}
-                              >
-                                গ্রহণ করুন
-                              </Button>
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                className="flex-1"
-                                onClick={() => handleRejectBid(bid.id)}
-                              >
-                                প্রত্যাখ্যান করুন
-                              </Button>
-                            </div>
-                          ) : (
-                            <div className="bg-yellow-100 text-yellow-800 py-2 px-3 rounded text-center">
-                              অপেক্ষমাণ
-                            </div>
-                          )
-                        ) : bid.status === 'accepted' ? (
-                          <div className="bg-green-100 text-green-800 py-2 px-3 rounded text-center">
-                            গৃহীত
-                          </div>
+                          <Badge variant="secondary">অপেক্ষমাণ</Badge>
+                        ) : bid.status === 'won' ? (
+                          <Badge className="bg-amber-500 hover:bg-amber-600">বিজয়ী 🏆</Badge>
+                        ) : bid.status === 'rejected' ? (
+                          <Badge variant="destructive">প্রত্যাখ্যাত</Badge>
+                        ) : bid.status === 'confirmed' ? (
+                          <Badge className="bg-green-500 hover:bg-green-600">নিশ্চিত</Badge>
                         ) : (
-                          <div className="bg-red-100 text-red-800 py-2 px-3 rounded text-center">
-                            প্রত্যাখ্যাত
-                          </div>
+                          <Badge variant="outline" className="capitalize">{bid.status}</Badge>
                         )}
                       </CardContent>
                     </Card>

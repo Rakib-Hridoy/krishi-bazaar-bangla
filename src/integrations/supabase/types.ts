@@ -456,6 +456,22 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      process_auction_end: {
+        Args: { product_id_param: string }
+        Returns: {
+          winner_bid_id: string
+          winner_user_id: string
+          winning_amount: number
+        }[]
+      }
+      process_expired_auctions: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          processed_product_id: string
+          winner_user_id: string
+          winning_amount: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
