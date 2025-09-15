@@ -14,6 +14,7 @@ import { useReviews } from '@/hooks/useReviews';
 import { Product } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
 import UserAvatar from '@/components/UserAvatar';
+import UserAnalytics from '@/components/analytics/UserAnalytics';
 
 const UserProfile = () => {
   const { id } = useParams<{ id: string }>();
@@ -201,10 +202,11 @@ const UserProfile = () => {
             {/* Content Area */}
             <div className="md:col-span-2">
               <Tabs defaultValue={userProfile.role === 'seller' ? "products" : "reviews"}>
-                <TabsList className="mb-6">
+                <TabsList className="mb-6 grid grid-cols-3 md:w-[400px]">
                   {userProfile.role === 'seller' && (
                     <TabsTrigger value="products">পণ্যসমূহ</TabsTrigger>
                   )}
+                  <TabsTrigger value="analytics">অ্যানালিটিক্স</TabsTrigger>
                   <TabsTrigger value="reviews">রিভিউ</TabsTrigger>
                   {currentUser?.id === userProfile.id && (
                     <TabsTrigger value="settings">সেটিংস</TabsTrigger>
@@ -246,6 +248,15 @@ const UserProfile = () => {
                     )}
                   </TabsContent>
                 )}
+                
+                <TabsContent value="analytics">
+                  <h2 className="text-xl font-bold mb-6">পারফরমেন্স অ্যানালিটিক্স</h2>
+                  <UserAnalytics 
+                    userId={userProfile.id} 
+                    userRole={userProfile.role} 
+                    isOwnProfile={currentUser?.id === userProfile.id}
+                  />
+                </TabsContent>
                 
                 <TabsContent value="reviews">
                   <h2 className="text-xl font-bold mb-6">রিভিউ</h2>

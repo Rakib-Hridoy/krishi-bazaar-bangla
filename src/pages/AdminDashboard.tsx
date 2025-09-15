@@ -6,17 +6,50 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@/types';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import PenaltyManagement from '@/components/admin/PenaltyManagement';
+import AdminReports from '@/components/admin/AdminReports';
+import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
 const AdminDashboard = () => {
+  const { profile } = useAuth();
+  
+  // Check if user is admin
+  if (profile?.role !== 'admin') {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <main className="flex-1 flex items-center justify-center">
+          <Card>
+            <CardContent className="p-8 text-center">
+              <h2 className="text-2xl font-bold mb-4">অননুমোদিত অ্যাক্সেস</h2>
+              <p className="text-muted-foreground">এই পেইজ শুধুমাত্র অ্যাডমিনদের জন্য।</p>
+            </CardContent>
+          </Card>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+  
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
       <main className="flex-1 container mx-auto py-12 px-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="col-span-1">
+        <h1 className="text-3xl font-bold mb-8">অ্যাডমিন ড্যাশবোর্ড</h1>
+        
+        <Tabs defaultValue="users" className="space-y-6">
+          <TabsList className="grid grid-cols-4 md:w-[500px]">
+            <TabsTrigger value="users">ব্যবহারকারী</TabsTrigger>
+            <TabsTrigger value="penalties">পেনাল্টি</TabsTrigger>
+            <TabsTrigger value="reports">রিপোর্ট</TabsTrigger>
+            <TabsTrigger value="products">পণ্য</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="users">
             <Card>
               <CardHeader>
                 <CardTitle>ব্যবহারকারী ব্যবস্থাপনা</CardTitle>
@@ -26,9 +59,17 @@ const AdminDashboard = () => {
                 <UserManagement />
               </CardContent>
             </Card>
-          </div>
+          </TabsContent>
           
-          <div className="col-span-1">
+          <TabsContent value="penalties">
+            <PenaltyManagement />
+          </TabsContent>
+          
+          <TabsContent value="reports">
+            <AdminReports />
+          </TabsContent>
+          
+          <TabsContent value="products">
             <Card>
               <CardHeader>
                 <CardTitle>পণ্য পর্যালোচনা</CardTitle>
@@ -38,8 +79,8 @@ const AdminDashboard = () => {
                 <ProductReview />
               </CardContent>
             </Card>
-          </div>
-        </div>
+          </TabsContent>
+        </Tabs>
       </main>
       
       <Footer />
@@ -52,7 +93,7 @@ export default AdminDashboard;
 const ProductReview = () => {
   return (
     <div>
-      পণ্য পর্যালোচনার কাজ চলছে...
+      <p className="text-muted-foreground">পণ্য পর্যালোচনার ফিচার শীঘ্রই আসছে...</p>
     </div>
   );
 };

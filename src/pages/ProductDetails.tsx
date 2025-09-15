@@ -34,6 +34,7 @@ import { Product } from '@/types';
 import ProductCard from '@/components/ProductCard';
 import BiddingStatus from '@/components/BiddingStatus';
 import ChatWindow from '@/components/ChatWindow';
+import ProductAnalytics from '@/components/analytics/ProductAnalytics';
 import { supabase } from '@/integrations/supabase/client';
 
 const ProductDetails = () => {
@@ -412,6 +413,12 @@ const ProductDetails = () => {
                 </Link>
               </div>
             </div>
+          </div>
+          
+          {/* Product Analytics Section */}
+          <div className="mt-12">
+            <h2 className="text-2xl font-bold mb-6">পণ্য অ্যানালিটিক্স</h2>
+            <ProductAnalytics productId={product.id} currentPrice={product.price} />
           </div>
           
           {/* Bids Section (Public) */}

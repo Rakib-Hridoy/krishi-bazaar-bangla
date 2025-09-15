@@ -8,16 +8,19 @@ import {
 } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
 import { getProductsByUserId } from '@/hooks/useProducts';
-import { getUserBids } from '@/hooks/useBids';
+import { getUserBids, getSellerReceivedBids } from '@/hooks/useBids';
 import { getUserReviews } from '@/hooks/useReviews';
 import { Product, Bid, Review } from '@/types';
 import { Link } from 'react-router-dom';
+import UserAnalytics from '@/components/analytics/UserAnalytics';
+import BidWithdrawal from '@/components/BidWithdrawal';
 
 const Dashboard = () => {
   const { user, profile, isAuthenticated, isLoading } = useAuth();
@@ -25,6 +28,7 @@ const Dashboard = () => {
   const { toast } = useToast();
   const [userProducts, setUserProducts] = useState<Product[]>([]);
   const [userBids, setUserBids] = useState<Bid[]>([]);
+  const [receivedBids, setReceivedBids] = useState<Bid[]>([]);
   const [userReviews, setUserReviews] = useState<Review[]>([]);
   const [activeTab, setActiveTab] = useState("overview");
   const [loadingData, setLoadingData] = useState(false);
@@ -56,6 +60,12 @@ const Dashboard = () => {
           if (profile?.role === 'buyer') {
             const bids = await getUserBids(user.id);
             setUserBids(bids);
+          }
+          
+          // For seller, fetch received bids
+          if (profile?.role === 'seller') {
+            const received = await getSellerReceivedBids(user.id);
+            setReceivedBids(received);
           }
           
           // Fetch reviews
@@ -127,8 +137,9 @@ const Dashboard = () => {
 
             {/* Dashboard Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid grid-cols-3 md:w-[400px] mb-8">
+              <TabsList className="grid grid-cols-4 md:w-[500px] mb-8">
                 <TabsTrigger value="overview">ওভারভিউ</TabsTrigger>
+                <TabsTrigger value="analytics">অ্যানালিটিক্স</TabsTrigger>
                 {profile?.role === 'seller' ? (
                   <TabsTrigger value="products">আমার পণ্য</TabsTrigger>
                 ) : (
@@ -188,6 +199,14 @@ const Dashboard = () => {
                 </Card>
               </TabsContent>
               
+              <TabsContent value="analytics" className="space-y-4">
+                <UserAnalytics 
+                  userId={user?.id || ''} 
+                  userRole={profile?.role || 'buyer'} 
+                  isOwnProfile={true}
+                />
+              </TabsContent>
+              
               <TabsContent value="products" className="space-y-4">
                 {profile?.role === 'seller' && (
                   <>
@@ -220,6 +239,20 @@ const Dashboard = () => {
                         </CardContent>
                       </Card>
                     )}
+                    
+                    {/* Received Bids Section */}
+                    <div className="mt-8">
+                      <h3 className="text-xl font-semibold mb-4">আপনার পণ্যে প্রাপ্ত বিড</h3>
+                      {receivedBids.length > 0 ? (
+                        <SellerReceivedBidsList bids={receivedBids} />
+                      ) : (
+                        <Card>
+                          <CardContent className="text-center py-8">
+                            <p className="text-muted-foreground">আপনার পণ্যে এখনো কোন বিড আসেনি।</p>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
                   </>
                 )}
               </TabsContent>
@@ -230,7 +263,14 @@ const Dashboard = () => {
                     <h3 className="text-xl font-semibold">আমার বিড</h3>
                     
                     {userBids.length > 0 ? (
-                      <BuyerBidsList bids={userBids} />
+                      <BuyerBidsList bids={userBids} onBidWithdrawn={() => {
+                        // Refresh bids after withdrawal
+                        const fetchUserData = async () => {
+                          const bids = await getUserBids(user.id);
+                          setUserBids(bids);
+                        };
+                        fetchUserData();
+                      }} />
                     ) : (
                       <Card>
                         <CardContent className="text-center py-12">
@@ -289,7 +329,7 @@ const Dashboard = () => {
   );
 };
 
-const BuyerBidsList = ({ bids }: { bids: Bid[] }) => {
+const BuyerBidsList = ({ bids, onBidWithdrawn }: { bids: Bid[]; onBidWithdrawn: () => void }) => {
   return (
     <div className="space-y-4">
       {bids.length === 0 ? (
@@ -298,7 +338,8 @@ const BuyerBidsList = ({ bids }: { bids: Bid[] }) => {
         </div>
       ) : (
         bids.map((bid) => (
-          <div key={bid.id} className="border rounded-lg p-4 shadow-sm">
+          <Card key={bid.id}>
+            <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <Link 
                 to={`/product/${bid.productId}`} 
@@ -309,10 +350,12 @@ const BuyerBidsList = ({ bids }: { bids: Bid[] }) => {
               <span className={`px-2 py-1 text-xs rounded-full ${
                 bid.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                 bid.status === 'accepted' ? 'bg-green-100 text-green-800' :
+                bid.status === 'withdrawn' ? 'bg-gray-100 text-gray-800' :
                 'bg-red-100 text-red-800'
               }`}>
                 {bid.status === 'pending' ? 'অপেক্ষারত' : 
-                 bid.status === 'accepted' ? 'গৃহীত' : 'প্রত্যাখ্যাত'}
+                 bid.status === 'accepted' ? 'গৃহীত' : 
+                 bid.status === 'withdrawn' ? 'প্রত্যাহৃত' : 'প্রত্যাখ্যাত'}
               </span>
             </div>
             
@@ -324,7 +367,54 @@ const BuyerBidsList = ({ bids }: { bids: Bid[] }) => {
             <p className="mt-1 text-sm text-gray-500">
               প্রস্তাবের তারিখ: {new Date(bid.createdAt).toLocaleDateString('bn-BD')}
             </p>
-          </div>
+            
+            {bid.status === 'pending' && (
+              <div className="mt-3 flex justify-end">
+                <BidWithdrawal bid={bid} onWithdrawSuccess={onBidWithdrawn} />
+              </div>
+            )}
+            </CardContent>
+          </Card>
+        ))
+      )}
+    </div>
+  );
+};
+
+const SellerReceivedBidsList = ({ bids }: { bids: Bid[] }) => {
+  return (
+    <div className="space-y-4">
+      {bids.length === 0 ? (
+        <div className="text-center py-8">
+          <p className="text-gray-500">আপনার পণ্যে এখনো কোন বিড আসেনি</p>
+        </div>
+      ) : (
+        bids.map((bid) => (
+          <Card key={bid.id}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">{(bid as any).productTitle}</p>
+                  <p className="text-sm text-muted-foreground">বিডকারী: {bid.buyerName}</p>
+                </div>
+                <div className="text-right">
+                  <p className="font-bold text-agriculture-green-dark">৳{bid.amount.toLocaleString()}</p>
+                  <Badge variant={
+                    bid.status === 'pending' ? 'secondary' :
+                    bid.status === 'accepted' ? 'default' :
+                    'outline'
+                  }>
+                    {bid.status === 'pending' ? 'অপেক্ষারত' : 
+                     bid.status === 'accepted' ? 'গৃহীত' : 
+                     bid.status === 'withdrawn' ? 'প্রত্যাহৃত' : 'প্রত্যাখ্যাত'}
+                  </Badge>
+                </div>
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">
+                বিডের তারিখ: {new Date(bid.createdAt).toLocaleDateString('bn-BD')}
+              </p>
+            </CardContent>
+          </Card>
         ))
       )}
     </div>

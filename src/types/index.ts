@@ -23,8 +23,9 @@ export interface Bid {
   buyerId: string;
   buyerName: string;
   amount: number;
-  status: 'pending' | 'accepted' | 'rejected';
+  status: 'pending' | 'accepted' | 'rejected' | 'withdrawn';
   createdAt: string;
+  withdrawnAt?: string;
 }
 
 export interface Review {
@@ -47,4 +48,44 @@ export interface User {
   avatar?: string;
   rating?: number;
   reviewCount?: number;
+}
+
+export interface Penalty {
+  id: string;
+  userId: string;
+  bidId: string;
+  productId: string;
+  penaltyType: 'deal_refusal' | 'fake_listing' | 'quality_issue';
+  penaltyAmount: number;
+  description: string;
+  status: 'active' | 'paid' | 'waived';
+  appliedBy: string;
+  appliedAt: string;
+  resolvedAt?: string;
+}
+
+export interface UserAnalytics {
+  userId: string;
+  totalProductsListed: number;
+  totalProductsSold: number;
+  totalRevenue: number;
+  averageProductPrice: number;
+  totalBidsPlaced: number;
+  totalPurchases: number;
+  totalSpent: number;
+  averagePurchasePrice: number;
+  successRate: number;
+  rating: number;
+  totalReviews: number;
+}
+
+export interface ProductAnalytics {
+  productId: string;
+  totalBids: number;
+  highestBid: number;
+  lowestBid: number;
+  averageBid: number;
+  finalPrice?: number;
+  viewsCount: number;
+  interestScore: number;
 }

@@ -9,6 +9,7 @@ import ProductCard from '@/components/ProductCard';
 import { Link } from 'react-router-dom';
 import { useProducts } from '@/hooks/useProducts';
 import ChatFloatingButton from '@/components/ChatFloatingButton';
+import PriceTrendChart from '@/components/analytics/PriceTrendChart';
 import heroBanner from "@/assets/hero-banner.jpg";
 
 const Index = () => {
@@ -144,6 +145,17 @@ const Index = () => {
               </Button>
             </div>
           )}
+        </div>
+      </section>
+      
+      {/* Price Trends Section */}
+      <section className="py-12 px-4">
+        <div className="container mx-auto">
+          <h2 className="text-2xl font-bold mb-6 text-center">বাজার দামের প্রবণতা</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <PriceTrendChart category="শস্য" title="শস্যের দাম" />
+            <PriceTrendChart category="সবজি" title="সবজির দাম" />
+          </div>
         </div>
       </section>
       
